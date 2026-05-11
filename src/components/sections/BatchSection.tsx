@@ -99,6 +99,11 @@ export default function BatchSection({ prefix, title, headerColor, register, wat
           alt={title}
           className="h-5 w-auto brightness-0 invert opacity-90"
         />
+        {prefix === 'uzum' && (
+          <span className="text-white/80 text-[11px] font-semibold uppercase tracking-widest">
+            Crossborder
+          </span>
+        )}
       </div>
       <div className="section-body">
         {/* Metrics table */}

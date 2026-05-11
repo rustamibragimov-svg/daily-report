@@ -14,7 +14,7 @@ export default function Layout() {
       <aside className="w-60 shrink-0 bg-[#1C1C2E] flex flex-col min-h-screen sticky top-0 h-screen">
         {/* Logo */}
         <div className="px-5 py-5 border-b border-white/10">
-          <img src="/logo.png" alt="Antria Group 3PL" className="h-10 w-auto" />
+          <img src="/antria-logo-B23HqTGc.png" alt="Antria Group" className="h-12 w-auto brightness-0 invert" />
         </div>
 
         {/* Section label */}

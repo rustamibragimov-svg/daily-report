@@ -1,41 +1,80 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { ClipboardList, History } from 'lucide-react';
+import { ClipboardList, History, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+const NAV = [
+  { to: '/', label: 'Ежедневный отчёт', icon: ClipboardList, end: true },
+  { to: '/history', label: 'История отчётов', icon: History, end: false },
+];
 
 export default function Layout() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-6">
-          <span className="font-bold text-brand-700 text-lg tracking-tight">3PL Daily Report</span>
-          <nav className="flex items-center gap-1 ml-4">
-            <NavLink
-              to="/"
-              end
-              className={({ isActive }) =>
-                cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                  isActive ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-100')
-              }
-            >
-              <ClipboardList size={15} />
-              Отчёт
-            </NavLink>
-            <NavLink
-              to="/history"
-              className={({ isActive }) =>
-                cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                  isActive ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-100')
-              }
-            >
-              <History size={15} />
-              История
-            </NavLink>
-          </nav>
+    <div className="min-h-screen flex bg-[#F4F6F9]">
+      {/* Sidebar */}
+      <aside className="w-60 shrink-0 bg-[#1C1C2E] flex flex-col min-h-screen sticky top-0 h-screen">
+        {/* Logo */}
+        <div className="px-5 py-5 border-b border-white/10">
+          <img src="/logo.png" alt="Antria Group 3PL" className="h-10 w-auto" />
         </div>
-      </header>
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-6">
-        <Outlet />
-      </main>
+
+        {/* Section label */}
+        <div className="px-5 pt-5 pb-2">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
+            Операции
+          </span>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 px-3 space-y-0.5">
+          {NAV.map(({ to, label, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors group',
+                  isActive
+                    ? 'bg-white/15 text-white font-medium'
+                    : 'text-white/60 hover:bg-white/8 hover:text-white/90'
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon size={16} className={isActive ? 'text-white' : 'text-white/50'} />
+                  <span className="flex-1">{label}</span>
+                  {isActive && <ChevronRight size={13} className="text-white/40" />}
+                </>
+              )}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Footer */}
+        <div className="px-5 py-4 border-t border-white/10">
+          <p className="text-[11px] text-white/25">3PL Department</p>
+          <p className="text-[11px] text-white/20">Antria Group</p>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top bar */}
+        <header className="bg-white border-b border-gray-200 px-8 h-14 flex items-center justify-between sticky top-0 z-20">
+          <h1 className="text-sm font-semibold text-gray-800 tracking-tight">
+            Операционный учёт · 3PL
+          </h1>
+          <div className="flex items-center gap-2 text-xs text-gray-400">
+            <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
+            Подключено к Supabase
+          </div>
+        </header>
+
+        <main className="flex-1 px-8 py-6 max-w-5xl w-full">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

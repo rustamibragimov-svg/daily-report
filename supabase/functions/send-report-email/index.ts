@@ -66,7 +66,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Antria 3PL <onboarding@resend.dev>',
+        from: 'Сардор Толяганов <sardor.tolyaganov@antria.uz>',
         to: [TO_EMAIL],
         subject: `Ежедневный отчет (${dateFormatted})`,
         html: buildHtml(dateFormatted),

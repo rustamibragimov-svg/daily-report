@@ -36,6 +36,42 @@ export function useReportHistory() {
   });
 }
 
+export function useDeleteReport() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from(TABLE).delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Отчёт удалён');
+      void qc.invalidateQueries({ queryKey: [TABLE, 'history'] });
+    },
+    onError: (err) => {
+      toast.error(`Ошибка удаления: ${(err as Error).message}`);
+    },
+  });
+}
+
+export function useDeleteAllReports() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from(TABLE).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('История очищена');
+      void qc.invalidateQueries({ queryKey: [TABLE, 'history'] });
+    },
+    onError: (err) => {
+      toast.error(`Ошибка: ${(err as Error).message}`);
+    },
+  });
+}
+
 export function useSaveReport() {
   const qc = useQueryClient();
 

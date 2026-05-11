@@ -1,9 +1,13 @@
 import type { UseFormRegister, UseFormWatch } from 'react-hook-form';
-import { Package } from 'lucide-react';
 import type { ReportFormValues } from '@/types/report';
 import { OPS_STATUS_OPTIONS } from '@/types/report';
 
 type Prefix = 'uzum' | 'cainiao';
+
+const BRAND_LOGO: Record<Prefix, string> = {
+  uzum: '/uzum-logo.png',
+  cainiao: '/cainiao-logo.png',
+};
 
 interface Props {
   prefix: Prefix;
@@ -90,8 +94,11 @@ export default function BatchSection({ prefix, title, headerColor, register, wat
   return (
     <div className="section-card">
       <div className="section-header" style={{ backgroundColor: headerColor }}>
-        <Package size={14} className="opacity-70" />
-        {title}
+        <img
+          src={BRAND_LOGO[prefix]}
+          alt={title}
+          className="h-5 w-auto brightness-0 invert opacity-90"
+        />
       </div>
       <div className="section-body">
         {/* Metrics table */}

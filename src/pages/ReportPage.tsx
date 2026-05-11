@@ -11,6 +11,7 @@ import { exportReportToExcel } from '@/utils/excel';
 import OperationalSection from '@/components/sections/OperationalSection';
 import CustomerServiceSection from '@/components/sections/CustomerServiceSection';
 import BatchSection from '@/components/sections/BatchSection';
+import AttachmentsSection from '@/components/AttachmentsSection';
 
 export default function ReportPage() {
   const { date } = useParams<{ date?: string }>();
@@ -130,6 +131,7 @@ export default function ReportPage() {
       <CustomerServiceSection register={register} watch={watch} />
       <BatchSection prefix="uzum" title="UZUM CROSSBORDER" headerColor="#7C22C5" register={register} watch={watch} />
       <BatchSection prefix="cainiao" title="CAINIAO" headerColor="#1D6FCC" register={register} watch={watch} />
+      <AttachmentsSection reportDate={watchedDate} />
 
       <div className="flex justify-end pb-8">
         <button

@@ -2,8 +2,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, Cell,
 } from 'recharts';
-import { Loader2, AlertCircle, BarChart3, TrendingUp } from 'lucide-react';
+import { Loader2, AlertCircle, BarChart3, TrendingUp, Paperclip, Download } from 'lucide-react';
 import { useReportHistory } from '@/hooks/useReport';
+import { useAllAttachments, getFileUrl, formatFileSize } from '@/hooks/useAttachments';
 import type { DailyReport, IncidentRow } from '@/types/report';
 import { formatDateRu } from '@/lib/utils';
 
@@ -183,6 +184,53 @@ function KpiCard({ label, value, sub }: { label: string; value: number; sub?: st
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
+function AttachmentsBlock() {
+  const { data: files, isLoading } = useAllAttachments();
+
+  if (isLoading) return null;
+  if (!files?.length) return (
+    <p className="text-xs text-center text-gray-300 py-4">Вложений пока нет</p>
+  );
+
+  // Group by report_date
+  const byDate = files.reduce<Record<string, typeof files>>((acc, f) => {
+    (acc[f.report_date] ??= []).push(f);
+    return acc;
+  }, {});
+
+  return (
+    <div className="section-card overflow-hidden">
+      {Object.entries(byDate)
+        .sort(([a], [b]) => b.localeCompare(a))
+        .map(([date, dateFiles]) => (
+          <div key={date} className="border-b border-gray-100 last:border-0">
+            <div className="px-4 py-2 bg-gray-50/60 flex items-center gap-2">
+              <Paperclip size={12} className="text-gray-400" />
+              <span className="text-xs font-semibold text-gray-600">{formatDateRu(date)}</span>
+              <span className="text-xs text-gray-400 ml-auto">{dateFiles.length} файл{dateFiles.length > 1 ? 'а' : ''}</span>
+            </div>
+            {dateFiles.map(f => (
+              <div key={f.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50/40 transition-colors">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-700 truncate">{f.file_name}</p>
+                  <p className="text-xs text-gray-400">{formatFileSize(f.file_size)}</p>
+                </div>
+                <a
+                  href={getFileUrl(f.file_path)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-gray-200 hover:bg-white text-gray-500 transition-colors"
+                >
+                  <Download size={11} /> Открыть
+                </a>
+              </div>
+            ))}
+          </div>
+        ))}
+    </div>
+  );
+}
+
 export default function AnalyticsPage() {
   const { data: reports, isLoading, isError } = useReportHistory();
 
@@ -317,6 +365,12 @@ export default function AnalyticsPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* ── Вложения по отчётам ── */}
+      <div className="space-y-3">
+        <SectionTitle>Вложения по отчётам</SectionTitle>
+        <AttachmentsBlock />
       </div>
     </div>
   );

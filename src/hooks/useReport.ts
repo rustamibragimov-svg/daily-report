@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { getWeekNumber } from '@/lib/utils';
+import { generateExcelBase64 } from '@/utils/excel';
 import type { DailyReport, ReportFormValues } from '@/types/report';
 
 const TABLE = 'daily_reports';
@@ -94,6 +95,20 @@ export function useSaveReport() {
       toast.success('Отчёт сохранён');
       void qc.invalidateQueries({ queryKey: [TABLE, data.report_date] });
       void qc.invalidateQueries({ queryKey: [TABLE, 'history'] });
+
+      // Send email in background
+      void (async () => {
+        try {
+          const excelBase64 = await generateExcelBase64(data);
+          const { error } = await supabase.functions.invoke('send-report-email', {
+            body: { reportDate: data.report_date, excelBase64 },
+          });
+          if (error) throw error;
+          toast.success('Отчёт отправлен на почту ✉️', { duration: 4000 });
+        } catch (err) {
+          toast.error(`Ошибка отправки: ${(err as Error).message}`, { duration: 6000 });
+        }
+      })();
     },
     onError: (err) => {
       toast.error(`Ошибка сохранения: ${(err as Error).message}`);

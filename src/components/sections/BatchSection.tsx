@@ -46,10 +46,11 @@ function OpsBlock({
 
   return (
     <div className="rounded-lg border border-gray-200 overflow-hidden">
-      <div className="flex items-center gap-3 px-4 py-3 bg-gray-50/70">
+      {/* Header row: label + status dropdown */}
+      <div className="flex items-center gap-3 px-4 py-3 bg-gray-50/70 border-b border-gray-200">
         <span className="text-sm font-medium text-gray-700 flex-1">{label}</span>
         <select
-          className={`rounded-lg border px-3 py-1.5 text-xs font-medium w-52 appearance-none cursor-pointer focus:outline-none transition-colors ${
+          className={`rounded-lg border px-3 py-1.5 text-xs font-semibold w-52 appearance-none cursor-pointer focus:outline-none transition-colors ${
             hasIncident
               ? 'text-red-700 bg-red-50 border-red-200'
               : 'text-emerald-700 bg-emerald-50 border-emerald-200'
@@ -60,21 +61,26 @@ function OpsBlock({
         </select>
       </div>
 
-      {!hasIncident ? (
-        <div className="px-4 py-2.5 bg-emerald-50/40 border-t border-emerald-100">
-          <p className="text-xs text-emerald-700/80 whitespace-pre-line leading-relaxed">{defaultText}</p>
-        </div>
-      ) : (
-        <div className="px-4 py-3 border-t border-gray-100">
-          <label className="field-label">Описание инцидента</label>
-          <textarea
-            className="textarea-base text-sm"
-            rows={3}
-            placeholder="Опишите инцидент подробно..."
-            {...register(incidentKey)}
-          />
-        </div>
-      )}
+      {/* Static bullet points — always visible */}
+      <div className={`px-4 py-2.5 border-b border-gray-100 ${hasIncident ? 'bg-white' : 'bg-emerald-50/30'}`}>
+        <p className={`text-xs whitespace-pre-line leading-relaxed ${hasIncident ? 'text-gray-400' : 'text-emerald-700/80'}`}>
+          {defaultText}
+        </p>
+      </div>
+
+      {/* Incident description — always visible as separate block */}
+      <div className={`px-4 py-3 ${hasIncident ? 'bg-red-50/20' : 'bg-white'}`}>
+        <label className={`field-label ${hasIncident ? 'text-red-600' : 'text-gray-400'}`}>
+          Описание инцидента
+        </label>
+        <textarea
+          className={`textarea-base text-sm ${hasIncident ? '' : 'bg-gray-50 text-gray-400'}`}
+          rows={2}
+          placeholder={hasIncident ? 'Опишите инцидент подробно...' : 'Нет инцидентов'}
+          disabled={!hasIncident}
+          {...register(incidentKey)}
+        />
+      </div>
     </div>
   );
 }

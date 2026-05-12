@@ -101,7 +101,7 @@ export function useSaveReport() {
         try {
           const excelBase64 = await generateExcelBase64(data);
           const { error } = await supabase.functions.invoke('send-report-email', {
-            body: { reportDate: data.report_date, excelBase64 },
+            body: { report: data, excelBase64 },
           });
           if (error) throw error;
           toast.success('Отчёт отправлен на почту ✉️', { duration: 4000 });

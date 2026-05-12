@@ -1,6 +1,8 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 // @ts-ignore npm import
 import nodemailer from 'npm:nodemailer';
+// @ts-ignore node compat
+import { Buffer } from 'node:buffer';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -239,7 +241,6 @@ serve(async (req) => {
       html: buildHtml(report),
       attachments: [{
         filename: `3PL_daily_report_${report.report_date}.xlsx`,
-        // deno-lint-ignore no-undef
         content: Buffer.from(excelBase64, 'base64'),
         contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       }],

@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { ClipboardList, History, ChevronRight, PanelLeftClose, PanelLeftOpen, BarChart3 } from 'lucide-react';
+import { ClipboardList, History, ChevronRight, PanelLeftClose, PanelLeftOpen, BarChart3, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const NAV = [
   { to: '/', label: 'Ежедневный отчёт', icon: ClipboardList, end: true },
   { to: '/history', label: 'История отчётов', icon: History, end: false },
   { to: '/analytics', label: 'Аналитика', icon: BarChart3, end: false },
+  { to: '/settings', label: 'Настройки', icon: Settings2, end: false },
 ];
 
 export default function Layout() {

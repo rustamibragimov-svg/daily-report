@@ -1,6 +1,8 @@
-import type { UseFormRegister, UseFormWatch } from 'react-hook-form';
+import type { UseFormRegister, UseFormWatch, UseFormSetValue } from 'react-hook-form';
+import { RefreshCw, Loader2 } from 'lucide-react';
 import type { ReportFormValues } from '@/types/report';
 import { OPS_STATUS_OPTIONS } from '@/types/report';
+import { useFetchBatchMetrics } from '@/hooks/useBatchMetrics';
 
 type Prefix = 'uzum' | 'cainiao';
 
@@ -15,6 +17,7 @@ interface Props {
   headerColor: string;
   register: UseFormRegister<ReportFormValues>;
   watch: UseFormWatch<ReportFormValues>;
+  setValue: UseFormSetValue<ReportFormValues>;
 }
 
 const CHINA_DEFAULT = '- Все партии приняты у клиента в соответствии с планом\n- Все партии обработаны на SWE в соответствии с планом\n- Все партии отправлены из Китая в соответствии с планом';
@@ -85,7 +88,27 @@ function OpsBlock({
   );
 }
 
-export default function BatchSection({ prefix, title, headerColor, register, watch }: Props) {
+export default function BatchSection({ prefix, title, headerColor, register, watch, setValue }: Props) {
+  const { fetch, loading } = useFetchBatchMetrics();
+  const reportDate = watch('report_date') as string;
+  const project = prefix === 'uzum' ? 'UZUM' : 'Cainiao';
+
+  const handleFetch = () => {
+    void fetch(reportDate, project, (m) => {
+      setValue(`${prefix}_sh_count` as keyof ReportFormValues, m.sh_count);
+      setValue(`${prefix}_hk_count` as keyof ReportFormValues, m.hk_count);
+      setValue(`${prefix}_sh_weight` as keyof ReportFormValues, m.sh_weight);
+      setValue(`${prefix}_hk_weight` as keyof ReportFormValues, m.hk_weight);
+      setValue(`${prefix}_sh_mko` as keyof ReportFormValues, m.sh_mko);
+      setValue(`${prefix}_hk_mko` as keyof ReportFormValues, m.hk_mko);
+      setValue(`${prefix}_sh_mpo` as keyof ReportFormValues, m.sh_mpo);
+      setValue(`${prefix}_hk_mpo` as keyof ReportFormValues, m.hk_mpo);
+      setValue(`${prefix}_sh_auto` as keyof ReportFormValues, m.sh_auto);
+      setValue(`${prefix}_hk_auto` as keyof ReportFormValues, m.hk_auto);
+      setValue(`${prefix}_sh_ratio` as keyof ReportFormValues, m.sh_ratio);
+      setValue(`${prefix}_hk_ratio` as keyof ReportFormValues, m.hk_ratio);
+    });
+  };
   const n = (k: string) => (Number(watch(`${prefix}_${k}` as keyof ReportFormValues)) || 0);
   const fmt = (v: number) => v % 1 === 0 ? String(v) : v.toFixed(2);
 
@@ -110,6 +133,17 @@ export default function BatchSection({ prefix, title, headerColor, register, wat
             Crossborder
           </span>
         )}
+        <button
+          type="button"
+          onClick={handleFetch}
+          disabled={loading || !reportDate}
+          className="ml-auto flex items-center gap-1.5 px-3 py-1 rounded-md bg-white/20 hover:bg-white/30 text-white text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading
+            ? <Loader2 size={12} className="animate-spin" />
+            : <RefreshCw size={12} />}
+          Загрузить из трекера
+        </button>
       </div>
       <div className="section-body">
         {/* Metrics table */}

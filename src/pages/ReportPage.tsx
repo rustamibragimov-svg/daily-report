@@ -129,8 +129,8 @@ export default function ReportPage() {
 
       <OperationalSection control={control} register={register} watch={(name) => watch(name) as string} />
       <CustomerServiceSection register={register} watch={watch} />
-      <BatchSection prefix="uzum" title="UZUM CROSSBORDER" headerColor="#7C22C5" register={register} watch={watch} />
-      <BatchSection prefix="cainiao" title="CAINIAO" headerColor="#1D6FCC" register={register} watch={watch} />
+      <BatchSection prefix="uzum" title="UZUM CROSSBORDER" headerColor="#7C22C5" register={register} watch={watch} setValue={setValue} />
+      <BatchSection prefix="cainiao" title="CAINIAO" headerColor="#1D6FCC" register={register} watch={watch} setValue={setValue} />
       <AttachmentsSection reportDate={watchedDate} />
 
       <div className="flex justify-end pb-8">

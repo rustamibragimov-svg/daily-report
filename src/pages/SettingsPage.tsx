@@ -90,15 +90,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Info block */}
-      <div className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-4">
-        <p className="text-sm font-medium text-blue-800 mb-1">Как добавить новую настройку</p>
-        <p className="text-xs text-blue-600">
-          Добавьте строку в таблицу <code>app_settings</code> в Supabase SQL Editor:
-        </p>
-        <pre className="mt-2 text-xs bg-blue-100 rounded p-2 text-blue-800 overflow-x-auto">{`INSERT INTO app_settings (key, value, label, section)
-VALUES ('my_key', '10', 'Моя настройка', 'cs');`}</pre>
-      </div>
     </div>
   );
 }

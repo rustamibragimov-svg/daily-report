@@ -16,7 +16,6 @@ function SettingRow({ setting }: { setting: AppSetting }) {
     <div className="flex items-center gap-4 py-3.5 border-b border-gray-100 last:border-0">
       <div className="flex-1">
         <p className="text-sm font-medium text-gray-800">{setting.label}</p>
-        <p className="text-xs text-gray-400 mt-0.5">Ключ: <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-600">{setting.key}</code></p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <input

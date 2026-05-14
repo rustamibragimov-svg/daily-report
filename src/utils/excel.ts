@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import type { DailyReport, IncidentRow } from '@/types/report';
 import { formatDateRu } from '@/lib/utils';
+import { UZUM_LOGO_B64, CAINIAO_LOGO_B64 } from './excelLogos';
 
 // ─── Palette (ARGB) ──────────────────────────────────────────────────────────
 const C = {
@@ -157,29 +158,22 @@ async function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): Promise
     const g = (k: string) => (report[`${prefix}_hk_${k}` as K] as number) ?? 0;
 
     // Logo row + headers
-    // Pre-sized logos: UZUM 112×32, Cainiao 58×32
-    // Row height 32pt ≈ 43px gives a small padding around 32px image
-    const logoW = prefix === 'uzum' ? 112 : 58;
-    const logoH = 32;
+    // Logos pre-sized to 96x26 (UZUM) and 48x26 (Cainiao) at 96dpi.
+    // Row height 30pt ≈ 40px at 96dpi (26px image + 7px top/bottom padding).
+    const logoW = prefix === 'uzum' ? 96 : 48;
+    const logoH = 26;
 
-    if (logoId !== null) {
-      mc(r, 2, r, 3); // single-row merge (not 2 rows)
-      sc(r, 2, '', { bg: 'white', bc: 'borderThin' });
-      ws.addImage(logoId, {
-        tl: { col: 1, row: r - 1 } as { col: number; row: number },
-        ext: { width: logoW, height: logoH },
-        editAs: 'oneCell',
-      } as Parameters<typeof ws.addImage>[1]);
-    } else {
-      mc(r, 2, r, 3);
-      sc(r, 2, prefix === 'uzum' ? 'UZUM' : 'CAINIAO', {
-        bold: true, size: 12, fg: 'secFg', align: 'center',
-      });
-    }
+    mc(r, 2, r, 3);
+    sc(r, 2, '', { bg: 'white', bc: 'borderThin' });
+    // Place image with a 4px top/left offset for visual padding
+    ws.addImage(logoId, {
+      tl: { col: 1, row: r - 1, nativeColOff: 38100, nativeRowOff: 38100 } as unknown as { col: number; row: number },
+      ext: { width: logoW, height: logoH },
+    });
     sc(r, 4, 'Всего',   { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 5, 'Шанхай',  { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 6, 'Гонконг', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
-    H(36); r++;
+    H(34); r++;
 
     const metricRows = [
       ['Количество принятых партий:', 'count'],
@@ -260,9 +254,9 @@ async function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): Promise
   /* Full UZUM/Cainiao section */
   async function bigSection(title: string, prefix: 'uzum' | 'cainiao') {
     secHead(title);
-    // Use pre-sized Excel logos (112x32 for UZUM, 58x32 for Cainiao)
-    const logoData = await imgBase64(`/${prefix}-logo-xl.png`);
-    const logoId = logoData ? wb.addImage({ base64: logoData, extension: 'png' }) : null;
+    // Inline base64 logos: 96x26 (UZUM) and 48x26 (Cainiao), 96dpi PNG
+    const b64 = prefix === 'uzum' ? UZUM_LOGO_B64 : CAINIAO_LOGO_B64;
+    const logoId = wb.addImage({ base64: b64, extension: 'png' });
     metricsTable(prefix, logoId);
 
     type K = keyof DailyReport;

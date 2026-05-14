@@ -27,18 +27,6 @@ const C = {
 } as const;
 type Clr = keyof typeof C;
 
-// ─── Fetch image as base64 ────────────────────────────────────────────────────
-async function imgBase64(src: string): Promise<string | null> {
-  try {
-    const res = await fetch(src);
-    const blob = await res.blob();
-    return await new Promise((resolve) => {
-      const fr = new FileReader();
-      fr.onloadend = () => resolve((fr.result as string).split(',')[1]);
-      fr.readAsDataURL(blob);
-    });
-  } catch { return null; }
-}
 
 // ─── Core builder ─────────────────────────────────────────────────────────────
 function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {

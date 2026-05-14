@@ -95,23 +95,34 @@ export function useSaveReport() {
       toast.success('Отчёт сохранён');
       void qc.invalidateQueries({ queryKey: [TABLE, data.report_date] });
       void qc.invalidateQueries({ queryKey: [TABLE, 'history'] });
-
-      // Send email in background
-      void (async () => {
-        try {
-          const excelBase64 = await generateExcelBase64(data);
-          const { error } = await supabase.functions.invoke('send-report-email', {
-            body: { report: data, excelBase64 },
-          });
-          if (error) throw error;
-          toast.success('Отчёт отправлен на почту ✉️', { duration: 4000 });
-        } catch (err) {
-          toast.error(`Ошибка отправки: ${(err as Error).message}`, { duration: 6000 });
-        }
-      })();
     },
     onError: (err) => {
       toast.error(`Ошибка сохранения: ${(err as Error).message}`);
+    },
+  });
+}
+
+/** Send (or test-send) a saved report via Edge Function */
+export async function sendReportEmail(
+  report: DailyReport,
+  testEmail?: string,
+): Promise<void> {
+  const excelBase64 = await generateExcelBase64(report);
+  const { error } = await supabase.functions.invoke('send-report-email', {
+    body: { report, excelBase64, testEmail },
+  });
+  if (error) throw new Error(error.message);
+}
+
+export function useSendTestEmail() {
+  return useMutation({
+    mutationFn: ({ report, email }: { report: DailyReport; email: string }) =>
+      sendReportEmail(report, email),
+    onSuccess: (_, { email }) => {
+      toast.success(`Письмо отправлено на ${email} ✉️`, { duration: 5000 });
+    },
+    onError: (err) => {
+      toast.error(`Ошибка отправки: ${(err as Error).message}`, { duration: 6000 });
     },
   });
 }

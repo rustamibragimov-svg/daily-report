@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import type { DailyReport, IncidentRow } from '@/types/report';
 import { formatDateRu } from '@/lib/utils';
+import { UZUM_LOGO_B64, CAINIAO_LOGO_B64 } from './excelLogos';
 
 // ─── Palette (ARGB) ──────────────────────────────────────────────────────────
 const C = {
@@ -40,7 +41,7 @@ async function imgBase64(src: string): Promise<string | null> {
 }
 
 // ─── Core builder ─────────────────────────────────────────────────────────────
-async function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): Promise<void> {
+function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
   const ws = wb.addWorksheet('Ежедневная отчётность');
 
   // Columns: A(2) B(26 label) C(20 val) D(13 total) E(15 sh) F(15 hk)
@@ -151,31 +152,36 @@ async function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): Promise
   }
 
   /* Metrics table for UZUM/Cainiao */
-  function metricsTable(prefix: 'uzum' | 'cainiao', logoId: number | null) {
+  function metricsTable(prefix: 'uzum' | 'cainiao') {
     type K = keyof DailyReport;
     const s = (k: string) => (report[`${prefix}_sh_${k}` as K] as number) ?? 0;
     const g = (k: string) => (report[`${prefix}_hk_${k}` as K] as number) ?? 0;
 
-    // Logo row + headers
-    if (logoId !== null) {
-      mc(r, 2, r + 1, 3);
-      sc(r, 2, '', { bg: 'white', bc: 'borderThin' });
-      ws.addImage(logoId, {
-        tl: { col: 1, row: r - 1 } as { col: number; row: number },
-        ext: { width: prefix === 'uzum' ? 90 : 70, height: 32 },
-      });
-    } else {
-      mc(r, 2, r + 1, 3);
-      sc(r, 2, prefix === 'uzum' ? 'UZUM' : 'CAINIAO', { bold: true, size: 12, fg: prefix === 'uzum' ? 'secFg' : 'secFg', align: 'center' });
-    }
-    sc(r, 4, 'Всего', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
-    sc(r, 5, 'Шанхай', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
-    sc(r, 6, 'Гонконг', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
-    H(18); r++;
+    // Logo: pre-sized PNG (70×20 UZUM, 36×20 Cainiao) embedded inline.
+    // Row height 15pt = 20px at 96dpi — exactly matches image height.
+    const b64  = prefix === 'uzum' ? UZUM_LOGO_B64  : CAINIAO_LOGO_B64;
+    const imgW = prefix === 'uzum' ? 70 : 36;
+    const imgH = 20;
+    const logoId = wb.addImage({ base64: b64, extension: 'png' });
 
-    // Filler row under logo
+    mc(r, 2, r, 3);
+    sc(r, 2, '', { bg: 'white', bc: 'borderThin' });
+    ws.addImage(logoId, {
+      tl: { col: 1, row: r - 1 } as { col: number; row: number },
+      ext: { width: imgW, height: imgH },
+      editAs: 'oneCell',
+    } as Parameters<typeof ws.addImage>[1]);
+
+    sc(r, 4, 'Всего',   { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
+    sc(r, 5, 'Шанхай',  { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
+    sc(r, 6, 'Гонконг', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
+    H(15); r++;
+
+    // Small spacer row (keeps B-C area white below logo)
+    mc(r, 2, r, 3);
+    sc(r, 2, '', { bg: 'white', bc: 'borderThin' });
     for (let c = 4; c <= 6; c++) sc(r, c, '', { bg: 'altRow', bc: 'borderThin' });
-    H(6); r++;
+    H(5); r++;
 
     const metricRows = [
       ['Количество принятых партий:', 'count'],
@@ -254,11 +260,9 @@ async function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): Promise
   }
 
   /* Full UZUM/Cainiao section */
-  async function bigSection(title: string, prefix: 'uzum' | 'cainiao') {
+  function bigSection(title: string, prefix: 'uzum' | 'cainiao') {
     secHead(title);
-    const logoData = await imgBase64(`/${prefix}-logo.png`);
-    const logoId = logoData ? wb.addImage({ base64: logoData, extension: 'png' }) : null;
-    metricsTable(prefix, logoId);
+    metricsTable(prefix);
 
     type K = keyof DailyReport;
     opsBlock('Операции в Китае',    `${prefix}_china_status` as K,   `${prefix}_china_incident` as K,   BULLETS.china);
@@ -302,14 +306,14 @@ async function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): Promise
   gap(4);
 
   // ─── 3 & 4. UZUM / CAINIAO ────────────────────────────────────────────────
-  await bigSection('UZUM CROSSBORDER', 'uzum');
-  await bigSection('CAINIAO', 'cainiao');
+  bigSection('UZUM CROSSBORDER', 'uzum');
+  bigSection('CAINIAO', 'cainiao');
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 export async function exportReportToExcel(report: DailyReport): Promise<void> {
   const wb = new ExcelJS.Workbook();
-  await buildWorkbook(wb, report);
+  buildWorkbook(wb, report);
   const buf = await wb.xlsx.writeBuffer();
   saveAs(
     new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
@@ -319,7 +323,7 @@ export async function exportReportToExcel(report: DailyReport): Promise<void> {
 
 export async function generateExcelBase64(report: DailyReport): Promise<string> {
   const wb = new ExcelJS.Workbook();
-  await buildWorkbook(wb, report);
+  buildWorkbook(wb, report);
   const buf = await wb.xlsx.writeBuffer();
   const bytes = new Uint8Array(buf as ArrayBuffer);
   let bin = '';

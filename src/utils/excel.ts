@@ -145,31 +145,28 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
     const s = (k: string) => (report[`${prefix}_sh_${k}` as K] as number) ?? 0;
     const g = (k: string) => (report[`${prefix}_hk_${k}` as K] as number) ?? 0;
 
-    // Logo: pre-sized PNG (70×20 UZUM, 36×20 Cainiao) embedded inline.
-    // Row height 15pt = 20px at 96dpi — exactly matches image height.
-    const b64  = prefix === 'uzum' ? UZUM_LOGO_B64  : CAINIAO_LOGO_B64;
-    const imgW = prefix === 'uzum' ? 70 : 36;
-    const imgH = 20;
+    // Logo: tl+br anchors image exactly to merged B-C area (rows r and r+1).
+    // Excel guarantees image stays inside the specified cell range with twoCellAnchor.
+    const b64 = prefix === 'uzum' ? UZUM_LOGO_B64 : CAINIAO_LOGO_B64;
     const logoId = wb.addImage({ base64: b64, extension: 'png' });
 
-    mc(r, 2, r, 3);
+    // Two rows for logo area: H(22) + H(6) = 28pt total
+    mc(r, 2, r + 1, 3);
     sc(r, 2, '', { bg: 'white', bc: 'borderThin' });
+    // tl = top-left of cell B(r), br = top-left of cell D(r+2)
+    // → image fills exactly B-C columns, rows r to r+1
     ws.addImage(logoId, {
       tl: { col: 1, row: r - 1 } as { col: number; row: number },
-      ext: { width: imgW, height: imgH },
-      editAs: 'oneCell',
-    } as Parameters<typeof ws.addImage>[1]);
+      br: { col: 3, row: r + 1 } as { col: number; row: number },
+    });
 
     sc(r, 4, 'Всего',   { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 5, 'Шанхай',  { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 6, 'Гонконг', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
-    H(15); r++;
+    H(22); r++;
 
-    // Small spacer row (keeps B-C area white below logo)
-    mc(r, 2, r, 3);
-    sc(r, 2, '', { bg: 'white', bc: 'borderThin' });
     for (let c = 4; c <= 6; c++) sc(r, c, '', { bg: 'altRow', bc: 'borderThin' });
-    H(5); r++;
+    H(6); r++;
 
     const metricRows = [
       ['Количество принятых партий:', 'count'],

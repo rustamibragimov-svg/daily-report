@@ -3,8 +3,8 @@ import { saveAs } from 'file-saver';
 import type { DailyReport, IncidentRow } from '@/types/report';
 import { formatDateRu } from '@/lib/utils';
 import {
-  UZUM_LOGO_B64, UZUM_LOGO_W, UZUM_LOGO_H,
-  CAINIAO_LOGO_B64, CAINIAO_LOGO_W, CAINIAO_LOGO_H,
+  UZUM_LOGO_B64, UZUM_LOGO_W,
+  CAINIAO_LOGO_B64, CAINIAO_LOGO_W,
 } from './excelLogos';
 
 // ─── Palette (ARGB) ──────────────────────────────────────────────────────────

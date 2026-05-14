@@ -2,10 +2,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import type { DailyReport, IncidentRow } from '@/types/report';
 import { formatDateRu } from '@/lib/utils';
-import {
-  UZUM_LOGO_B64, UZUM_LOGO_W,
-  CAINIAO_LOGO_B64, CAINIAO_LOGO_W,
-} from './excelLogos';
+import { UZUM_LOGO_B64, CAINIAO_LOGO_B64 } from './excelLogos';
 
 // ─── Palette (ARGB) ──────────────────────────────────────────────────────────
 const C = {
@@ -148,23 +145,15 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
     const s = (k: string) => (report[`${prefix}_sh_${k}` as K] as number) ?? 0;
     const g = (k: string) => (report[`${prefix}_hk_${k}` as K] as number) ?? 0;
 
-    // twoCellAnchor + editAs:oneCell + exact EMU coords.
-    // Row H(44pt)=58px. Image 34px. Center vertically: topOff=(58-34)/2=12px=114300 EMU.
-    // Both tl and br in same row (row: r-1) — image stays within single row, no overflow.
-    const b64  = prefix === 'uzum' ? UZUM_LOGO_B64 : CAINIAO_LOGO_B64;
-    const imgW = prefix === 'uzum' ? UZUM_LOGO_W   : CAINIAO_LOGO_W;
-    const PX   = 9525; // 1px in EMU
-    const leftOff = 6 * PX;   // 6px left padding
-    const topOff  = 12 * PX;  // 12px top padding — centers 34px image in 58px row
-    const logoId  = wb.addImage({ base64: b64, extension: 'png' });
+    // Canvas 345x67px pre-sized to match B+C cell area (46ch*7.5px × 50pt*96/72).
+    // Logo centered with natural proportions + white padding.
+    // String range twoCellAnchor — reliable on PC and mobile Excel.
+    const b64    = prefix === 'uzum' ? UZUM_LOGO_B64 : CAINIAO_LOGO_B64;
+    const logoId = wb.addImage({ base64: b64, extension: 'png' });
 
     mc(r, 2, r + 1, 3);
     sc(r, 2, '', { bg: 'white', bc: 'borderThin' });
-    ws.addImage(logoId, {
-      tl: { col: 1, row: r - 1, nativeColOff: leftOff,            nativeRowOff: topOff            } as unknown as { col: number; row: number },
-      br: { col: 1, row: r - 1, nativeColOff: leftOff + imgW * PX, nativeRowOff: topOff + 34 * PX } as unknown as { col: number; row: number },
-      editAs: 'oneCell',
-    } as Parameters<typeof ws.addImage>[1]);
+    ws.addImage(logoId, `B${r}:C${r + 1}`);
     sc(r, 4, 'Всего',   { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 5, 'Шанхай',  { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 6, 'Гонконг', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });

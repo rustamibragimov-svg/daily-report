@@ -109,17 +109,15 @@ function incidentTable(rows: IncidentRow[]): string {
 
 /** Fix #2: single table for all CS rows so columns stay perfectly aligned */
 function csTable(rows: Array<{ label: string; value: string | number; note?: string }>): string {
-  const tds = rows.map(({ label, value, note }, i) => {
-    const mb = i < rows.length - 1 ? '' : '';
-    void mb;
-    const noteBorder = note
-      ? `border:1px solid ${C.border};`
-      : `border-top:1px solid transparent;border-bottom:1px solid transparent;border-right:1px solid transparent;border-left:none;`;
+  const tds = rows.map(({ label, value, note }) => {
+    const valueCell = note
+      ? `<td style="padding:9px 12px;background:#fff;font-size:13px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(value)}</td>
+      <td style="padding:9px 12px;background:#fff;font-size:11px;color:${C.orange};font-style:italic;border:1px solid ${C.border};white-space:nowrap;">${esc(note)}</td>`
+      : `<td colspan="2" style="padding:9px 12px;background:#fff;font-size:13px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(value)}</td>`;
     return `
     <tr>
       <td style="padding:9px 12px;background:${C.labelBg};font-size:12px;font-weight:bold;color:${C.labelFg};border:1px solid ${C.border};">${esc(label)}</td>
-      <td style="padding:9px 12px;background:#fff;font-size:13px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(value)}</td>
-      <td style="padding:9px 12px;background:#fff;font-size:11px;color:${C.orange};font-style:italic;${noteBorder}white-space:nowrap;">${note ? esc(note) : ''}</td>
+      ${valueCell}
     </tr>
     <tr><td colspan="3" style="height:6px;background:transparent;border:none;"></td></tr>`;
   }).join('');

@@ -2,7 +2,6 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import type { DailyReport, IncidentRow } from '@/types/report';
 import { formatDateRu } from '@/lib/utils';
-import { UZUM_LOGO_B64, CAINIAO_LOGO_B64 } from './excelLogos';
 
 // ─── Palette (ARGB) ──────────────────────────────────────────────────────────
 const C = {
@@ -29,7 +28,7 @@ type Clr = keyof typeof C;
 
 
 // ─── Core builder ─────────────────────────────────────────────────────────────
-async function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): Promise<void> {
+function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
   const ws = wb.addWorksheet('Ежедневная отчётность');
 
   // Columns: A(2) B(26 label) C(20 val) D(13 total) E(15 sh) F(15 hk)
@@ -140,28 +139,27 @@ async function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): Promise
   }
 
   /* Metrics table for UZUM/Cainiao */
-  function metricsTable(prefix: 'uzum' | 'cainiao', logoId: number) {
+  function metricsTable(prefix: 'uzum' | 'cainiao') {
     type K = keyof DailyReport;
     const s = (k: string) => (report[`${prefix}_sh_${k}` as K] as number) ?? 0;
     const g = (k: string) => (report[`${prefix}_hk_${k}` as K] as number) ?? 0;
 
-    // Logo row + headers
-    // Logos pre-sized to 96x26 (UZUM) and 48x26 (Cainiao) at 96dpi.
-    // Row height 30pt ≈ 40px at 96dpi (26px image + 7px top/bottom padding).
-    const logoW = prefix === 'uzum' ? 96 : 48;
-    const logoH = 26;
-
+    // Brand name cell — styled text, always renders correctly in any Excel version
+    const brandLabel = prefix === 'uzum' ? 'uzum' : 'CAINIAO';
+    const brandColor = prefix === 'uzum' ? 'FF7C22C5' : 'FF1D6FCC';
     mc(r, 2, r, 3);
-    sc(r, 2, '', { bg: 'white', bc: 'borderThin' });
-    // Place image with a 4px top/left offset for visual padding
-    ws.addImage(logoId, {
-      tl: { col: 1, row: r - 1, nativeColOff: 38100, nativeRowOff: 38100 } as unknown as { col: number; row: number },
-      ext: { width: logoW, height: logoH },
-    });
+    const brandCell = ws.getCell(r, 2);
+    brandCell.value = brandLabel;
+    brandCell.font = { name: 'Calibri', size: 16, bold: true, color: { argb: brandColor } };
+    brandCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.white } };
+    brandCell.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
+    const bbs = { style: 'thin' as const, color: { argb: C.borderThin } };
+    brandCell.border = { top: bbs, left: bbs, bottom: bbs, right: bbs };
+
     sc(r, 4, 'Всего',   { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 5, 'Шанхай',  { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 6, 'Гонконг', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
-    H(34); r++;
+    H(26); r++;
 
     const metricRows = [
       ['Количество принятых партий:', 'count'],
@@ -240,12 +238,9 @@ async function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): Promise
   }
 
   /* Full UZUM/Cainiao section */
-  async function bigSection(title: string, prefix: 'uzum' | 'cainiao') {
+  function bigSection(title: string, prefix: 'uzum' | 'cainiao') {
     secHead(title);
-    // Inline base64 logos: 96x26 (UZUM) and 48x26 (Cainiao), 96dpi PNG
-    const b64 = prefix === 'uzum' ? UZUM_LOGO_B64 : CAINIAO_LOGO_B64;
-    const logoId = wb.addImage({ base64: b64, extension: 'png' });
-    metricsTable(prefix, logoId);
+    metricsTable(prefix);
 
     type K = keyof DailyReport;
     opsBlock('Операции в Китае',    `${prefix}_china_status` as K,   `${prefix}_china_incident` as K,   BULLETS.china);
@@ -289,14 +284,14 @@ async function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): Promise
   gap(4);
 
   // ─── 3 & 4. UZUM / CAINIAO ────────────────────────────────────────────────
-  await bigSection('UZUM CROSSBORDER', 'uzum');
-  await bigSection('CAINIAO', 'cainiao');
+  bigSection('UZUM CROSSBORDER', 'uzum');
+  bigSection('CAINIAO', 'cainiao');
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 export async function exportReportToExcel(report: DailyReport): Promise<void> {
   const wb = new ExcelJS.Workbook();
-  await buildWorkbook(wb, report);
+  buildWorkbook(wb, report);
   const buf = await wb.xlsx.writeBuffer();
   saveAs(
     new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
@@ -306,7 +301,7 @@ export async function exportReportToExcel(report: DailyReport): Promise<void> {
 
 export async function generateExcelBase64(report: DailyReport): Promise<string> {
   const wb = new ExcelJS.Workbook();
-  await buildWorkbook(wb, report);
+  buildWorkbook(wb, report);
   const buf = await wb.xlsx.writeBuffer();
   const bytes = new Uint8Array(buf as ArrayBuffer);
   let bin = '';

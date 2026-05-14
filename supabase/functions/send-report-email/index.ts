@@ -226,12 +226,12 @@ function signature(): string {
             <p style="margin:0 0 8px;font-size:12px;color:#6b7280;">Руководитель 3PL направления · Antria Group</p>
             <p style="margin:0 0 4px;font-size:12px;color:#374151;">📱 +998 (90) 138-58-90 / +998 (90) 999-70-04</p>
             <p style="margin:0 0 4px;font-size:12px;color:#374151;">✉️ <a href="mailto:sardor.tolyaganov@antria.uz" style="color:#2563eb;text-decoration:none;">sardor.tolyaganov@antria.uz</a></p>
-            <p style="margin:0 0 4px;font-size:12px;color:#374151;line-height:16px;">
-              <img src="https://img.icons8.com/color/16/telegram-app--v1.png" alt="Telegram" width="16" height="16" style="display:inline;vertical-align:middle;margin-right:4px;" />
+            <p style="margin:0 0 4px;font-size:12px;color:#374151;line-height:18px;">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/48px-Telegram_logo.svg.png" alt="Telegram" width="16" height="16" style="display:inline;vertical-align:middle;margin-right:5px;" />
               <a href="https://t.me/Sardor_DM_PM" style="color:#2563eb;text-decoration:none;vertical-align:middle;">t.me/Sardor_DM_PM</a>
             </p>
-            <p style="margin:0;font-size:12px;color:#374151;line-height:16px;">
-              <img src="https://img.icons8.com/color/16/wechat.png" alt="WeChat" width="16" height="16" style="display:inline;vertical-align:middle;margin-right:4px;" />
+            <p style="margin:0;font-size:12px;color:#374151;line-height:18px;">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/WeChat_logo.svg/48px-WeChat_logo.svg.png" alt="WeChat" width="16" height="16" style="display:inline;vertical-align:middle;margin-right:5px;" />
               <span style="vertical-align:middle;">sardor_logistics</span>
             </p>
           </td>

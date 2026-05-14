@@ -107,15 +107,27 @@ function incidentTable(rows: IncidentRow[]): string {
   </table>`;
 }
 
-/** Fix #2: always 3 equal-width columns; empty note cell has no visible border */
-function csRow(label: string, value: string | number, note?: string): string {
-  return `
-  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:7px;">
+/** Fix #2: single table for all CS rows so columns stay perfectly aligned */
+function csTable(rows: Array<{ label: string; value: string | number; note?: string }>): string {
+  const tds = rows.map(({ label, value, note }, i) => {
+    const mb = i < rows.length - 1 ? '' : '';
+    void mb;
+    const noteBorder = note
+      ? `border:1px solid ${C.border};`
+      : `border-top:1px solid transparent;border-bottom:1px solid transparent;border-right:1px solid transparent;border-left:none;`;
+    return `
     <tr>
-      <td style="padding:9px 12px;background:${C.labelBg};font-size:12px;font-weight:bold;color:${C.labelFg};border:1px solid ${C.border};width:52%;">${esc(label)}</td>
-      <td style="padding:9px 12px;background:#fff;font-size:13px;color:#1f2937;text-align:center;border:1px solid ${C.border};width:20%;">${esc(value)}</td>
-      <td style="padding:9px 12px;background:#fff;font-size:11px;color:${C.orange};font-style:italic;border:1px solid ${note ? C.border : 'transparent'};width:28%;white-space:nowrap;">${note ? esc(note) : ''}</td>
+      <td style="padding:9px 12px;background:${C.labelBg};font-size:12px;font-weight:bold;color:${C.labelFg};border:1px solid ${C.border};">${esc(label)}</td>
+      <td style="padding:9px 12px;background:#fff;font-size:13px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(value)}</td>
+      <td style="padding:9px 12px;background:#fff;font-size:11px;color:${C.orange};font-style:italic;${noteBorder}white-space:nowrap;">${note ? esc(note) : ''}</td>
     </tr>
+    <tr><td colspan="3" style="height:6px;background:transparent;border:none;"></td></tr>`;
+  }).join('');
+
+  return `
+  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;table-layout:fixed;">
+    <colgroup><col style="width:52%"><col style="width:20%"><col style="width:28%"></colgroup>
+    ${tds}
   </table>`;
 }
 
@@ -295,16 +307,13 @@ export function buildEmailHtml(
         ${sectionHead(2, 'CUSTOMER SERVICE', C.sec2, '🎧')}
         <tr>
           <td style="padding:16px 24px 20px;">
-            ${csRow('Всего заявок за день', report.cs_total ?? 0)}
-            ${csRow(
-              'Просрочено заявок',
-              report.cs_overdue ?? 0,
-              report.cs_overdue_reason
-                ? `Причина: ${report.cs_overdue_reason}`
-                : 'Причина: описание причины',
-            )}
-            ${csRow('Средний срок выполнения, дней (текущая неделя)', report.cs_avg_week ?? 'Нет данных', 'Цель: 2,5 дн.')}
-            ${csRow('Средний срок выполнения, дней (текущий месяц)',  report.cs_avg_month ?? 0,           'Цель: 2,5 дн.')}
+            ${csTable([
+              { label: 'Всего заявок за день', value: report.cs_total ?? 0 },
+              { label: 'Просрочено заявок', value: report.cs_overdue ?? 0,
+                note: report.cs_overdue_reason ? `Причина: ${report.cs_overdue_reason}` : 'Причина: описание причины' },
+              { label: 'Средний срок выполнения, дней (текущая неделя)', value: report.cs_avg_week ?? 'Нет данных', note: 'Цель: 2,5 дн.' },
+              { label: 'Средний срок выполнения, дней (текущий месяц)',  value: report.cs_avg_month ?? 0,           note: 'Цель: 2,5 дн.' },
+            ])}
           </td>
         </tr>
         ${sep()}

@@ -231,15 +231,19 @@ async function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): Promise
     };
     H(20); r++;
 
-    // Bullet points
+    // Bullet points — height based on line count so nothing gets cut off
     mc(r, 2, r, 6);
-    sc(r, 2, bullets, {
-      size: 9, wrap: true,
-      fg: ok ? 'greenLightFg' : 'redLightFg',
-      bg: ok ? 'greenLight' : 'redLight',
-      bc: 'borderThin', indent: 1,
-    });
-    H(48); r++;
+    const cell = ws.getCell(r, 2);
+    cell.value = bullets;
+    cell.font = { name: 'Calibri', size: 9,
+      color: { argb: C[ok ? 'greenLightFg' : 'redLightFg'] } };
+    cell.fill = { type: 'pattern', pattern: 'solid',
+      fgColor: { argb: C[ok ? 'greenLight' : 'redLight'] } };
+    cell.alignment = { horizontal: 'left', vertical: 'top', wrapText: true, indent: 1 };
+    const bs = { style: 'thin' as const, color: { argb: C.borderThin } };
+    cell.border = { top: bs, left: bs, bottom: bs, right: bs };
+    const lineCount = bullets.split('\n').length;
+    H(lineCount * 14 + 10); r++;
 
     // Incident description
     sc(r, 2, 'Описание индидента', { bold: true, bg: 'labelBg', bc: 'borderThin' });

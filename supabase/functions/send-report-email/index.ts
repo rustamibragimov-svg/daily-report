@@ -57,10 +57,13 @@ const BULLETS = {
 
 // ─── building blocks ──────────────────────────────────────────────────────────
 function sectionHead(num: number, title: string, color: string, emoji?: string): string {
+  const iconHtml = emoji
+    ? `<span style="font-size:13px;line-height:1;vertical-align:middle;">${emoji}</span><span style="font-size:13px;">&nbsp;</span>`
+    : '';
   return `
   <tr>
-    <td style="background:${color};padding:11px 24px;color:#fff;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;letter-spacing:0.3px;">
-      ${emoji ? `${emoji}&nbsp;` : ''}${num}. ${title}
+    <td style="background:${color};padding:11px 24px;color:#fff;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;letter-spacing:0.3px;line-height:1.4;vertical-align:middle;">
+      ${iconHtml}<span style="vertical-align:middle;">${num}. ${title}</span>
     </td>
   </tr>`;
 }

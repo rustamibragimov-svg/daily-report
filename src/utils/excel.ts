@@ -2,7 +2,10 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import type { DailyReport, IncidentRow } from '@/types/report';
 import { formatDateRu } from '@/lib/utils';
-import { UZUM_LOGO_B64, CAINIAO_LOGO_B64 } from './excelLogos';
+import {
+  UZUM_LOGO_B64, UZUM_LOGO_W, UZUM_LOGO_H,
+  CAINIAO_LOGO_B64, CAINIAO_LOGO_W, CAINIAO_LOGO_H,
+} from './excelLogos';
 
 // ─── Palette (ARGB) ──────────────────────────────────────────────────────────
 const C = {
@@ -145,19 +148,24 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
     const s = (k: string) => (report[`${prefix}_sh_${k}` as K] as number) ?? 0;
     const g = (k: string) => (report[`${prefix}_hk_${k}` as K] as number) ?? 0;
 
-    // Logo pre-sized to 322×56px (exact B+C cell area at H(42pt)).
-    // String-range twoCellAnchor: image fills cell exactly, works on mobile.
-    const b64    = prefix === 'uzum' ? UZUM_LOGO_B64 : CAINIAO_LOGO_B64;
+    // Natural-proportion logos (UZUM 119x34, CAINIAO 61x34).
+    // Row H(44pt)=58px > image 34px → 12px top/bottom padding, no overflow.
+    // tl+ext = oneCellAnchor: correct size, no stretching.
+    const b64 = prefix === 'uzum' ? UZUM_LOGO_B64 : CAINIAO_LOGO_B64;
+    const imgW = prefix === 'uzum' ? UZUM_LOGO_W : CAINIAO_LOGO_W;
+    const imgH = prefix === 'uzum' ? UZUM_LOGO_H : CAINIAO_LOGO_H;
     const logoId = wb.addImage({ base64: b64, extension: 'png' });
 
     mc(r, 2, r + 1, 3);
     sc(r, 2, '', { bg: 'white', bc: 'borderThin' });
-    // twoCellAnchor via string range — guaranteed inside cell, shows on mobile
-    ws.addImage(logoId, `B${r}:C${r + 1}`);
+    ws.addImage(logoId, {
+      tl: { col: 1, row: r - 1 } as { col: number; row: number },
+      ext: { width: imgW, height: imgH },
+    });
     sc(r, 4, 'Всего',   { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 5, 'Шанхай',  { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 6, 'Гонконг', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
-    H(36); r++;
+    H(44); r++;
 
     for (let c = 4; c <= 6; c++) sc(r, c, '', { bg: 'altRow', bc: 'borderThin' });
     H(6); r++;

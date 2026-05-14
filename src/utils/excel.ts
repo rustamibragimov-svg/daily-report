@@ -157,20 +157,19 @@ async function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): Promise
     const g = (k: string) => (report[`${prefix}_hk_${k}` as K] as number) ?? 0;
 
     // Logo row + headers
-    // Give the logo area a proper height so the image fits
-    const logoRowHeight = 36;
-    const logoFillRowHeight = 8;
+    // Heights: 30pt first row + 4pt filler = 34pt total ≈ 45px
+    // Images sized to fit: height=28px, width calculated from aspect ratio
+    // UZUM 1401×400 → ratio 3.5 → 98×28. Cainiao 1280×711 → ratio 1.8 → 50×28
+    const logoW = prefix === 'uzum' ? 98 : 50;
+    const logoH = 28;
 
     if (logoId !== null) {
       mc(r, 2, r + 1, 3);
       sc(r, 2, '', { bg: 'white', bc: 'borderThin' });
-      sc(r + 1, 2, '', { bg: 'white' }); // filler cell keeps bg
-      // Use tl+br so the image anchors exactly to the merged cell bounds
       ws.addImage(logoId, {
         tl: { col: 1, row: r - 1 } as { col: number; row: number },
-        br: { col: 3, row: r + 1 } as { col: number; row: number },
-        editAs: 'oneCell',
-      } as Parameters<typeof ws.addImage>[1]);
+        ext: { width: logoW, height: logoH },
+      });
     } else {
       mc(r, 2, r + 1, 3);
       sc(r, 2, prefix === 'uzum' ? 'UZUM' : 'CAINIAO', {
@@ -180,11 +179,11 @@ async function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): Promise
     sc(r, 4, 'Всего',   { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 5, 'Шанхай',  { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 6, 'Гонконг', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
-    H(logoRowHeight); r++;
+    H(30); r++;
 
     // Filler row under logo
     for (let c = 4; c <= 6; c++) sc(r, c, '', { bg: 'altRow', bc: 'borderThin' });
-    H(logoFillRowHeight); r++;
+    H(4); r++;
 
     const metricRows = [
       ['Количество принятых партий:', 'count'],

@@ -145,14 +145,18 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
     const s = (k: string) => (report[`${prefix}_sh_${k}` as K] as number) ?? 0;
     const g = (k: string) => (report[`${prefix}_hk_${k}` as K] as number) ?? 0;
 
-    // No merge on logo row — some mobile Excel apps skip images over merged cells.
-    // Image placed in unmerged B-C range. Filler row B-C also set explicitly.
+    // editAs:'twoCell' — size from anchor coords, NOT from cx/cy (which ExcelJS sets to 0).
+    // cx=0,cy=0 caused mobile Excel to render nothing. twoCell fixes mobile display.
     const b64    = prefix === 'uzum' ? UZUM_LOGO_B64 : CAINIAO_LOGO_B64;
     const logoId = wb.addImage({ base64: b64, extension: 'jpeg' });
 
     sc(r, 2, '', { bg: 'white', bc: 'borderThin' });
     sc(r, 3, '', { bg: 'white', bc: 'borderThin' });
-    ws.addImage(logoId, `B${r}:C${r + 1}`);
+    ws.addImage(logoId, {
+      tl: { col: 1, row: r - 1 } as { col: number; row: number },
+      br: { col: 3, row: r + 1 } as { col: number; row: number },
+      editAs: 'twoCell',
+    } as Parameters<typeof ws.addImage>[1]);
     sc(r, 4, 'Всего',   { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 5, 'Шанхай',  { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 6, 'Гонконг', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });

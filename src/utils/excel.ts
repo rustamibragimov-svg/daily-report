@@ -151,7 +151,7 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
     const b64   = prefix === 'uzum' ? UZUM_LOGO_B64 : CAINIAO_LOGO_B64;
     const imgW  = prefix === 'uzum' ? 77 : 40;
     const imgH  = 22;
-    const logoId = wb.addImage({ base64: b64, extension: 'png' });
+    const logoId = wb.addImage({ base64: b64, extension: 'jpeg' });
 
     mc(r, 2, r, 3);
     sc(r, 2, '', { bg: 'white', bc: 'borderThin' });

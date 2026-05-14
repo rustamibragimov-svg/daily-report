@@ -145,28 +145,18 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
     const s = (k: string) => (report[`${prefix}_sh_${k}` as K] as number) ?? 0;
     const g = (k: string) => (report[`${prefix}_hk_${k}` as K] as number) ?? 0;
 
-    // Logo images are 22px tall. Row height H(32pt) = ~43px at 96dpi.
-    // Image (22px) is well inside the row (43px) — 21px padding, no overflow.
-    // UZUM: 77×22, CAINIAO: 40×22, correct aspect ratios.
-    const b64   = prefix === 'uzum' ? UZUM_LOGO_B64 : CAINIAO_LOGO_B64;
-    const imgW  = prefix === 'uzum' ? 77 : 40;
-    const imgH  = 22;
+    // twoCellAnchor via string range — guaranteed inside cell, works on mobile.
+    // Image fills B-C in row r exactly. H(42pt) ≈ col-B-width/UZUM-ratio.
+    const b64    = prefix === 'uzum' ? UZUM_LOGO_B64 : CAINIAO_LOGO_B64;
     const logoId = wb.addImage({ base64: b64, extension: 'png' });
 
-    mc(r, 2, r, 3);
     sc(r, 2, '', { bg: 'white', bc: 'borderThin' });
-    ws.addImage(logoId, {
-      tl: { col: 1, row: r - 1 } as { col: number; row: number },
-      ext: { width: imgW, height: imgH },
-    });
+    sc(r, 3, '', { bg: 'white', bc: 'borderThin' });
+    ws.addImage(logoId, `B${r}:C${r}`);
     sc(r, 4, 'Всего',   { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 5, 'Шанхай',  { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 6, 'Гонконг', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
-    H(32); r++;
-
-    // Spacer
-    for (let c = 4; c <= 6; c++) sc(r, c, '', { bg: 'altRow', bc: 'borderThin' });
-    H(4); r++;
+    H(42); r++;
 
     const metricRows = [
       ['Количество принятых партий:', 'count'],

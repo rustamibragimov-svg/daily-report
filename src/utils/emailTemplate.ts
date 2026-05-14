@@ -1,5 +1,7 @@
 import type { DailyReport, IncidentRow } from '@/types/report';
 
+const BASE_URL = 'https://daily-report-dlg.pages.dev';
+
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function fmtDate(iso: string): string {
   if (!iso) return '';
@@ -7,43 +9,26 @@ function fmtDate(iso: string): string {
   return `${d}.${m}.${y}`;
 }
 
+/** Fix #1: check for BAD keywords, not good ones */
 function isOk(status: string | undefined): boolean {
   if (!status) return true;
-  return (
-    status === 'Без инцидентов' ||
-    status.includes('своевременно') ||
-    status.includes('корректно')
-  );
+  const s = status.toLowerCase();
+  return !s.includes('нарушени') && !s.includes('присутствуют');
 }
 
 function esc(s: string | number | undefined | null): string {
   if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // ─── palette ──────────────────────────────────────────────────────────────────
 const C = {
-  sec1: '#1C1C2E',
-  sec2: '#6D28D9',
-  sec3: '#7C22C5',
-  sec4: '#1D6FCC',
-  labelBg: '#f3f4f6',
-  labelFg: '#374151',
-  border: '#e5e7eb',
-  borderDk: '#d1d5db',
-  okBg: '#16a34a',
-  okBulletBg: '#f0fdf4',
-  okBulletFg: '#166534',
-  okBulletBorder: '#bbf7d0',
-  errBg: '#dc2626',
-  errBulletBg: '#fef2f2',
-  errBulletFg: '#991b1b',
-  errBulletBorder: '#fecaca',
-  orange: '#d97706',
-  altRow: '#f9fafb',
+  sec1: '#1C1C2E', sec2: '#6D28D9', sec3: '#7C22C5', sec4: '#1D6FCC',
+  labelBg: '#f3f4f6', labelFg: '#374151',
+  border: '#e5e7eb', borderDk: '#d1d5db',
+  okBg: '#16a34a', okBulletBg: '#f0fdf4', okBulletFg: '#166534', okBulletBorder: '#bbf7d0',
+  errBg: '#dc2626', errBulletBg: '#fef2f2', errBulletFg: '#991b1b', errBulletBorder: '#fecaca',
+  orange: '#d97706', altRow: '#f9fafb',
 };
 
 const BULLETS = {
@@ -62,16 +47,16 @@ const BULLETS = {
 };
 
 // ─── building blocks ──────────────────────────────────────────────────────────
-function sectionHead(num: number, title: string, color: string): string {
+function sectionHead(num: number, title: string, color: string, emoji?: string): string {
   return `
   <tr>
     <td style="background:${color};padding:11px 24px;color:#fff;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;letter-spacing:0.3px;">
-      ${num}. ${title}
+      ${emoji ? `${emoji}&nbsp;` : ''}${num}. ${title}
     </td>
   </tr>`;
 }
 
-function separator(): string {
+function sep(): string {
   return `<tr><td style="height:1px;background:${C.border};"></td></tr>`;
 }
 
@@ -84,7 +69,7 @@ function statusRow(label: string, value: string): string {
   return `
   <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:10px;">
     <tr>
-      <td style="padding:9px 12px;background:${C.labelBg};font-weight:bold;font-size:12px;color:${C.labelFg};border:1px solid ${C.border};width:40%;">${esc(label)}</td>
+      <td style="padding:9px 12px;background:${C.labelBg};font-weight:bold;font-size:12px;color:${C.labelFg};border:1px solid ${C.border};width:42%;">${esc(label)}</td>
       ${statusBadge(value)}
     </tr>
   </table>`;
@@ -122,13 +107,14 @@ function incidentTable(rows: IncidentRow[]): string {
   </table>`;
 }
 
+/** Fix #2: always 3 equal-width columns; empty note cell has no visible border */
 function csRow(label: string, value: string | number, note?: string): string {
   return `
   <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:7px;">
     <tr>
       <td style="padding:9px 12px;background:${C.labelBg};font-size:12px;font-weight:bold;color:${C.labelFg};border:1px solid ${C.border};width:52%;">${esc(label)}</td>
-      <td style="padding:9px 12px;background:#fff;font-size:13px;color:#1f2937;text-align:center;border:1px solid ${C.border};width:22%;">${esc(value)}</td>
-      ${note ? `<td style="padding:9px 12px;background:#fff;font-size:11px;color:${C.orange};font-style:italic;border:1px solid ${C.border};width:26%;white-space:nowrap;">${esc(note)}</td>` : '<td style="padding:9px 12px;background:#fff;border:1px solid #e5e7eb;"></td>'}
+      <td style="padding:9px 12px;background:#fff;font-size:13px;color:#1f2937;text-align:center;border:1px solid ${C.border};width:20%;">${esc(value)}</td>
+      <td style="padding:9px 12px;background:#fff;font-size:11px;color:${C.orange};font-style:italic;border:1px solid ${note ? C.border : 'transparent'};width:28%;white-space:nowrap;">${note ? esc(note) : ''}</td>
     </tr>
   </table>`;
 }
@@ -137,13 +123,13 @@ function opsBlock(label: string, status: string, incident: string, bullets: stri
   const ok = isOk(status);
   const bulletLines = bullets
     .split('\n')
-    .map(b => `<span style="display:block;margin-bottom:2px;">${esc(b)}</span>`)
+    .map(b => `<span style="display:block;margin-bottom:3px;">${esc(b)}</span>`)
     .join('');
 
   return `
   <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:10px;">
     <tr>
-      <td style="padding:9px 12px;background:${C.labelBg};font-size:12px;font-weight:bold;color:${C.labelFg};border:1px solid ${C.border};width:40%;">${esc(label)}</td>
+      <td style="padding:9px 12px;background:${C.labelBg};font-size:12px;font-weight:bold;color:${C.labelFg};border:1px solid ${C.border};width:42%;">${esc(label)}</td>
       ${statusBadge(status)}
     </tr>
     <tr>
@@ -151,17 +137,15 @@ function opsBlock(label: string, status: string, incident: string, bullets: stri
         ${bulletLines}
       </td>
     </tr>
-    ${
-      incident
-        ? `<tr>
-      <td style="padding:7px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};border:1px solid ${C.border};width:40%;">Описание инцидента</td>
+    ${incident ? `
+    <tr>
+      <td style="padding:7px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};border:1px solid ${C.border};width:42%;">Описание инцидента</td>
       <td style="padding:7px 12px;background:#fffbeb;font-size:12px;color:#92400e;border:1px solid #fde68a;">${esc(incident)}</td>
-    </tr>`
-        : ''
-    }
+    </tr>` : ''}
   </table>`;
 }
 
+/** Fix #3: show logo images for UZUM and Cainiao */
 function metricsBlock(prefix: 'uzum' | 'cainiao', report: Partial<DailyReport>): string {
   type K = keyof DailyReport;
   const n = (k: string) => ((report[`${prefix}_${k}` as K] as number) ?? 0);
@@ -173,6 +157,9 @@ function metricsBlock(prefix: 'uzum' | 'cainiao', report: Partial<DailyReport>):
   const sh_mpo = n('sh_mpo'), hk_mpo = n('hk_mpo');
   const sh_auto = n('sh_auto'), hk_auto = n('hk_auto');
 
+  const logoUrl = `${BASE_URL}/${prefix}-logo.png`;
+  const logoHeight = prefix === 'uzum' ? '28' : '26';
+
   const row = (label: string, sh: number, hk: number) => `
     <tr>
       <td style="padding:7px 12px;background:${C.altRow};font-size:12px;color:${C.labelFg};border:1px solid ${C.border};">${esc(label)}</td>
@@ -181,14 +168,11 @@ function metricsBlock(prefix: 'uzum' | 'cainiao', report: Partial<DailyReport>):
       <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${hk}</td>
     </tr>`;
 
-  const brandName = prefix === 'uzum' ? 'UZUM' : 'CAINIAO';
-  const brandColor = prefix === 'uzum' ? C.sec3 : C.sec4;
-
   return `
   <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:16px;">
     <tr>
       <td style="padding:10px 12px;background:#f9fafb;border:1px solid ${C.border};">
-        <strong style="font-size:14px;color:${brandColor};font-family:Arial,sans-serif;">${brandName}</strong>
+        <img src="${logoUrl}" alt="${prefix.toUpperCase()}" height="${logoHeight}" style="display:block;max-width:110px;" />
       </td>
       <td style="padding:8px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};text-align:center;border:1px solid ${C.border};">Всего</td>
       <td style="padding:8px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};text-align:center;border:1px solid ${C.border};">Шанхай</td>
@@ -206,9 +190,33 @@ function metricsBlock(prefix: 'uzum' | 'cainiao', report: Partial<DailyReport>):
       <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(s('hk_ratio'))}</td>
     </tr>
   </table>
-  ${opsBlock('Операции в Китае',         s('china_status'),    s('china_incident'),    BULLETS.china)}
-  ${opsBlock('Транзитные операции',       s('transit_status'),  s('transit_incident'),  BULLETS.transit)}
-  ${opsBlock('Операции последней мили',   s('lastmile_status'), s('lastmile_incident'), BULLETS.lastmile)}`;
+  ${opsBlock('Операции в Китае',          s('china_status'),    s('china_incident'),    BULLETS.china)}
+  ${opsBlock('Транзитные операции',        s('transit_status'),  s('transit_incident'),  BULLETS.transit)}
+  ${opsBlock('Операции последней мили',    s('lastmile_status'), s('lastmile_incident'), BULLETS.lastmile)}`;
+}
+
+/** Fix #4: full signature */
+function signature(): string {
+  return `
+  <tr>
+    <td style="padding:18px 24px;background:#f9fafb;border-top:2px solid ${C.border};">
+      <table cellpadding="0" cellspacing="0" style="font-family:Arial,sans-serif;">
+        <tr>
+          <td style="padding-right:20px;vertical-align:top;">
+            <img src="${BASE_URL}/favicon.png" alt="Antria" height="48" style="display:block;" />
+          </td>
+          <td style="vertical-align:top;border-left:3px solid #e5e7eb;padding-left:18px;">
+            <p style="margin:0 0 2px;font-size:14px;font-weight:bold;color:#1C1C2E;">Сардор Толяганов</p>
+            <p style="margin:0 0 8px;font-size:12px;color:#6b7280;">Руководитель 3PL направления · Antria Group</p>
+            <p style="margin:0 0 3px;font-size:12px;color:#374151;">📱 +998 (90) 138-58-90 / +998 (90) 999-70-04</p>
+            <p style="margin:0 0 3px;font-size:12px;color:#374151;">✉️ <a href="mailto:sardor.tolyaganov@antria.uz" style="color:#2563eb;text-decoration:none;">sardor.tolyaganov@antria.uz</a></p>
+            <p style="margin:0 0 3px;font-size:12px;color:#374151;">✈️ <a href="https://t.me/Sardor_DM_PM" style="color:#2563eb;text-decoration:none;">t.me/Sardor_DM_PM</a></p>
+            <p style="margin:0;font-size:12px;color:#374151;">💬 WeChat: sardor_logistics</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>`;
 }
 
 // ─── main export ──────────────────────────────────────────────────────────────
@@ -229,8 +237,7 @@ export function buildEmailHtml(
     { responsible: '', details: '', resolution: '' },
   ]);
 
-  const dataAccuracy =
-    report.data_accuracy ?? 'Все данные в трекер занесены своевременно и корректно';
+  const dataAccuracy = report.data_accuracy ?? 'Все данные в трекер занесены своевременно и корректно';
   const incidentsStatus = report.incidents_status ?? 'Без инцидентов';
 
   return `<!DOCTYPE html>
@@ -246,7 +253,7 @@ export function buildEmailHtml(
     <td align="center" style="padding:0 12px;">
       <table cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:620px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.10);">
 
-        <!-- ── HEADER ── -->
+        <!-- HEADER -->
         <tr>
           <td style="background:#1C1C2E;padding:18px 24px;">
             <table width="100%" cellpadding="0" cellspacing="0">
@@ -262,7 +269,7 @@ export function buildEmailHtml(
           </td>
         </tr>
 
-        <!-- ── GREETING ── -->
+        <!-- GREETING -->
         <tr>
           <td style="padding:20px 24px 18px;border-bottom:2px solid ${C.border};">
             <p style="margin:0 0 6px;font-size:14px;color:#374151;font-family:Arial,sans-serif;">Антон, добрый день!</p>
@@ -272,7 +279,7 @@ export function buildEmailHtml(
           </td>
         </tr>
 
-        <!-- ══════ 1. OPERATIONAL ══════ -->
+        <!-- 1. OPERATIONAL -->
         ${sectionHead(1, 'ОБЩИЙ ОПЕРАЦИОННЫЙ КОНТРОЛЬ', C.sec1)}
         <tr>
           <td style="padding:16px 24px 20px;">
@@ -282,10 +289,10 @@ export function buildEmailHtml(
             ${incidentTable(incidentRows)}
           </td>
         </tr>
-        ${separator()}
+        ${sep()}
 
-        <!-- ══════ 2. CUSTOMER SERVICE ══════ -->
-        ${sectionHead(2, 'CUSTOMER SERVICE', C.sec2)}
+        <!-- 2. CUSTOMER SERVICE -->
+        ${sectionHead(2, 'CUSTOMER SERVICE', C.sec2, '🎧')}
         <tr>
           <td style="padding:16px 24px 20px;">
             ${csRow('Всего заявок за день', report.cs_total ?? 0)}
@@ -300,18 +307,18 @@ export function buildEmailHtml(
             ${csRow('Средний срок выполнения, дней (текущий месяц)',  report.cs_avg_month ?? 0,           'Цель: 2,5 дн.')}
           </td>
         </tr>
-        ${separator()}
+        ${sep()}
 
-        <!-- ══════ 3. UZUM ══════ -->
+        <!-- 3. UZUM -->
         ${sectionHead(3, 'UZUM CROSSBORDER', C.sec3)}
         <tr>
           <td style="padding:16px 24px 20px;">
             ${metricsBlock('uzum', report)}
           </td>
         </tr>
-        ${separator()}
+        ${sep()}
 
-        <!-- ══════ 4. CAINIAO ══════ -->
+        <!-- 4. CAINIAO -->
         ${sectionHead(4, 'CAINIAO', C.sec4)}
         <tr>
           <td style="padding:16px 24px 20px;">
@@ -319,14 +326,8 @@ export function buildEmailHtml(
           </td>
         </tr>
 
-        <!-- ── FOOTER ── -->
-        <tr>
-          <td style="padding:18px 24px;background:#f9fafb;border-top:2px solid ${C.border};">
-            <p style="margin:0 0 4px;font-size:13px;color:#374151;font-family:Arial,sans-serif;">С уважением,</p>
-            <p style="margin:0 0 2px;font-size:13px;font-weight:bold;color:#1f2937;font-family:Arial,sans-serif;">Сардор Толяганов</p>
-            <p style="margin:0;font-size:12px;color:#9ca3af;font-family:Arial,sans-serif;">3PL Department · Antria Group</p>
-          </td>
-        </tr>
+        <!-- SIGNATURE -->
+        ${signature()}
 
       </table>
     </td>

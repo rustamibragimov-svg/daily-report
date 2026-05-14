@@ -10,6 +10,7 @@ const CORS = {
 };
 
 const DEFAULT_TO = 'anton.grigorevskiy@antria.uz';
+const BASE_URL   = 'https://daily-report-dlg.pages.dev';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function fmt(iso: string): string {
@@ -22,13 +23,11 @@ function esc(s: string | number | undefined | null): string {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/** Fix #1: check BAD keywords, not good ones */
 function isOk(status: string | undefined): boolean {
   if (!status) return true;
-  return (
-    status === 'Без инцидентов' ||
-    status.includes('своевременно') ||
-    status.includes('корректно')
-  );
+  const s = status.toLowerCase();
+  return !s.includes('нарушени') && !s.includes('присутствуют');
 }
 
 // ─── palette ──────────────────────────────────────────────────────────────────
@@ -57,11 +56,11 @@ const BULLETS = {
 };
 
 // ─── building blocks ──────────────────────────────────────────────────────────
-function sectionHead(num: number, title: string, color: string): string {
+function sectionHead(num: number, title: string, color: string, emoji?: string): string {
   return `
   <tr>
     <td style="background:${color};padding:11px 24px;color:#fff;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;letter-spacing:0.3px;">
-      ${num}. ${title}
+      ${emoji ? `${emoji}&nbsp;` : ''}${num}. ${title}
     </td>
   </tr>`;
 }
@@ -87,7 +86,9 @@ function statusRow(label: string, value: string): string {
 
 // deno-lint-ignore no-explicit-any
 function incidentTable(rows: any[]): string {
-  const filled = (rows ?? []).filter((r: { responsible: string }) => r.responsible || r.details || r.resolution);
+  const filled = (rows ?? []).filter((r: { responsible?: string; details?: string; resolution?: string }) =>
+    r.responsible || r.details || r.resolution
+  );
   const display = filled.length
     ? filled
     : [
@@ -115,15 +116,14 @@ function incidentTable(rows: any[]): string {
   </table>`;
 }
 
+/** Fix #2: always 3 columns; empty note cell has transparent border */
 function csRow(label: string, value: string | number, note?: string): string {
   return `
   <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:7px;">
     <tr>
       <td style="padding:9px 12px;background:${C.labelBg};font-size:12px;font-weight:bold;color:${C.labelFg};border:1px solid ${C.border};width:52%;">${esc(label)}</td>
-      <td style="padding:9px 12px;background:#fff;font-size:13px;color:#1f2937;text-align:center;border:1px solid ${C.border};width:22%;">${esc(value)}</td>
-      ${note
-        ? `<td style="padding:9px 12px;background:#fff;font-size:11px;color:${C.orange};font-style:italic;border:1px solid ${C.border};width:26%;white-space:nowrap;">${esc(note)}</td>`
-        : `<td style="padding:9px 12px;background:#fff;border:1px solid ${C.border};"></td>`}
+      <td style="padding:9px 12px;background:#fff;font-size:13px;color:#1f2937;text-align:center;border:1px solid ${C.border};width:20%;">${esc(value)}</td>
+      <td style="padding:9px 12px;background:#fff;font-size:11px;color:${C.orange};font-style:italic;border:1px solid ${note ? C.border : 'transparent'};width:28%;white-space:nowrap;">${note ? esc(note) : ''}</td>
     </tr>
   </table>`;
 }
@@ -146,21 +146,22 @@ function opsBlock(label: string, status: string, incident: string, bullets: stri
         ${bulletLines}
       </td>
     </tr>
-    ${incident
-      ? `<tr>
+    ${incident ? `
+    <tr>
       <td style="padding:7px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};border:1px solid ${C.border};width:42%;">Описание инцидента</td>
       <td style="padding:7px 12px;background:#fffbeb;font-size:12px;color:#92400e;border:1px solid #fde68a;">${esc(incident)}</td>
-    </tr>`
-      : ''}
+    </tr>` : ''}
   </table>`;
 }
 
+/** Fix #3: logo images for UZUM and Cainiao */
 // deno-lint-ignore no-explicit-any
 function metricsBlock(report: any, prefix: string): string {
-  const n = (k: string) => report[`${prefix}_${k}`] ?? 0;
-  const ns = (k: string) => report[`${prefix}_${k}`] ?? 'Нет данных';
-  const brandName = prefix === 'uzum' ? 'UZUM' : 'CAINIAO';
-  const brandColor = prefix === 'uzum' ? C.sec3 : C.sec4;
+  const n = (k: string) => report[k] ?? 0;
+  const ns = (k: string) => report[k] ?? 'Нет данных';
+
+  const logoUrl = `${BASE_URL}/${prefix}-logo.png`;
+  const logoHeight = prefix === 'uzum' ? '28' : '26';
 
   const row = (label: string, shK: string, hkK: string) => {
     const sh = n(shK), hk = n(hkK);
@@ -177,7 +178,7 @@ function metricsBlock(report: any, prefix: string): string {
   <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:16px;">
     <tr>
       <td style="padding:10px 12px;background:#f9fafb;border:1px solid ${C.border};">
-        <strong style="font-size:14px;color:${brandColor};font-family:Arial,sans-serif;">${brandName}</strong>
+        <img src="${logoUrl}" alt="${prefix.toUpperCase()}" height="${logoHeight}" style="display:block;max-width:110px;" />
       </td>
       <td style="padding:8px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};text-align:center;border:1px solid ${C.border};">Всего</td>
       <td style="padding:8px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};text-align:center;border:1px solid ${C.border};">Шанхай</td>
@@ -195,9 +196,33 @@ function metricsBlock(report: any, prefix: string): string {
       <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(ns(`${prefix}_hk_ratio`))}</td>
     </tr>
   </table>
-  ${opsBlock('Операции в Китае',       report[`${prefix}_china_status`]    ?? 'Без инцидентов', report[`${prefix}_china_incident`]    ?? '', BULLETS.china)}
-  ${opsBlock('Транзитные операции',    report[`${prefix}_transit_status`]  ?? 'Без инцидентов', report[`${prefix}_transit_incident`]  ?? '', BULLETS.transit)}
-  ${opsBlock('Операции последней мили',report[`${prefix}_lastmile_status`] ?? 'Без инцидентов', report[`${prefix}_lastmile_incident`] ?? '', BULLETS.lastmile)}`;
+  ${opsBlock('Операции в Китае',          report[`${prefix}_china_status`]    ?? 'Без инцидентов', report[`${prefix}_china_incident`]    ?? '', BULLETS.china)}
+  ${opsBlock('Транзитные операции',        report[`${prefix}_transit_status`]  ?? 'Без инцидентов', report[`${prefix}_transit_incident`]  ?? '', BULLETS.transit)}
+  ${opsBlock('Операции последней мили',    report[`${prefix}_lastmile_status`] ?? 'Без инцидентов', report[`${prefix}_lastmile_incident`] ?? '', BULLETS.lastmile)}`;
+}
+
+/** Fix #4: full signature */
+function signature(): string {
+  return `
+  <tr>
+    <td style="padding:18px 24px;background:#f9fafb;border-top:2px solid ${C.border};">
+      <table cellpadding="0" cellspacing="0" style="font-family:Arial,sans-serif;">
+        <tr>
+          <td style="padding-right:18px;vertical-align:top;">
+            <img src="${BASE_URL}/favicon.png" alt="Antria" height="48" style="display:block;" />
+          </td>
+          <td style="vertical-align:top;border-left:3px solid #e5e7eb;padding-left:18px;">
+            <p style="margin:0 0 2px;font-size:14px;font-weight:bold;color:#1C1C2E;">Сардор Толяганов</p>
+            <p style="margin:0 0 8px;font-size:12px;color:#6b7280;">Руководитель 3PL направления · Antria Group</p>
+            <p style="margin:0 0 3px;font-size:12px;color:#374151;">📱 +998 (90) 138-58-90 / +998 (90) 999-70-04</p>
+            <p style="margin:0 0 3px;font-size:12px;color:#374151;">✉️ <a href="mailto:sardor.tolyaganov@antria.uz" style="color:#2563eb;text-decoration:none;">sardor.tolyaganov@antria.uz</a></p>
+            <p style="margin:0 0 3px;font-size:12px;color:#374151;">✈️ <a href="https://t.me/Sardor_DM_PM" style="color:#2563eb;text-decoration:none;">t.me/Sardor_DM_PM</a></p>
+            <p style="margin:0;font-size:12px;color:#374151;">💬 WeChat: sardor_logistics</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>`;
 }
 
 // ─── main HTML builder ────────────────────────────────────────────────────────
@@ -258,7 +283,7 @@ function buildHtml(report: any): string {
         ${sep()}
 
         <!-- 2. CUSTOMER SERVICE -->
-        ${sectionHead(2, 'CUSTOMER SERVICE', C.sec2)}
+        ${sectionHead(2, 'CUSTOMER SERVICE', C.sec2, '🎧')}
         <tr>
           <td style="padding:16px 24px 20px;">
             ${csRow('Всего заявок за день', report.cs_total ?? 0)}
@@ -287,14 +312,8 @@ function buildHtml(report: any): string {
           </td>
         </tr>
 
-        <!-- FOOTER -->
-        <tr>
-          <td style="padding:18px 24px;background:#f9fafb;border-top:2px solid ${C.border};">
-            <p style="margin:0 0 4px;font-size:13px;color:#374151;font-family:Arial,sans-serif;">С уважением,</p>
-            <p style="margin:0 0 2px;font-size:13px;font-weight:bold;color:#1f2937;font-family:Arial,sans-serif;">Сардор Толяганов</p>
-            <p style="margin:0;font-size:12px;color:#9ca3af;font-family:Arial,sans-serif;">3PL Department · Antria Group</p>
-          </td>
-        </tr>
+        <!-- SIGNATURE -->
+        ${signature()}
 
       </table>
     </td>

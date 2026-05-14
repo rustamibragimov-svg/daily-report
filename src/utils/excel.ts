@@ -88,7 +88,7 @@ async function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): Promise
   function statusRow(label: string, value: string, statusOptions?: string[]) {
     sc(r, 2, label, { bold: true, bg: 'labelBg', bc: 'borderThin' });
     mc(r, 3, r, 6);
-    const ok = value.includes('своевременно') || value === 'Без инцидентов';
+    const ok = !value.toLowerCase().includes('нарушени') && !value.toLowerCase().includes('присутствуют');
     sc(r, 3, value, {
       bold: true, size: 10, align: 'center',
       fg: ok ? 'greenFg' : 'redFg',
@@ -214,7 +214,7 @@ async function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): Promise
   function opsBlock(label: string, statusKey: keyof DailyReport, incidentKey: keyof DailyReport, bullets: string) {
     const status = (report[statusKey] as string) ?? 'Без инцидентов';
     const incident = (report[incidentKey] as string) ?? '';
-    const ok = status === 'Без инцидентов';
+    const ok = !status.toLowerCase().includes('нарушени') && !status.toLowerCase().includes('присутствуют');
 
     // Status row
     sc(r, 2, label, { bold: true, bg: 'labelBg', bc: 'borderThin' });

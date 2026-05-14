@@ -169,7 +169,7 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
     H(6); r++;
 
     const metricRows = [
-      ['Количество принятых партий:', 'count'],
+      ['Количество отгруженных партий:', 'count'],
       ['Общий вес партий, кг:', 'weight'],
       ['Из них МКО, кг:', 'mko'],
       ['Из них МПО, кг:', 'mpo'],

@@ -113,7 +113,7 @@ export default function BatchSection({ prefix, title, headerColor, register, wat
   const fmt = (v: number) => v % 1 === 0 ? String(v) : v.toFixed(2);
 
   const rows: { label: string; total: string; sh: keyof ReportFormValues; hk: keyof ReportFormValues }[] = [
-    { label: 'Кол-во принятых партий', total: fmt(n('sh_count') + n('hk_count')), sh: `${prefix}_sh_count` as keyof ReportFormValues, hk: `${prefix}_hk_count` as keyof ReportFormValues },
+    { label: 'Кол-во отгруженных партий', total: fmt(n('sh_count') + n('hk_count')), sh: `${prefix}_sh_count` as keyof ReportFormValues, hk: `${prefix}_hk_count` as keyof ReportFormValues },
     { label: 'Общий вес партий, кг',   total: fmt(n('sh_weight') + n('hk_weight')), sh: `${prefix}_sh_weight` as keyof ReportFormValues, hk: `${prefix}_hk_weight` as keyof ReportFormValues },
     { label: 'МКО, кг',                total: fmt(n('sh_mko') + n('hk_mko')), sh: `${prefix}_sh_mko` as keyof ReportFormValues, hk: `${prefix}_hk_mko` as keyof ReportFormValues },
     { label: 'МПО, кг',                total: fmt(n('sh_mpo') + n('hk_mpo')), sh: `${prefix}_sh_mpo` as keyof ReportFormValues, hk: `${prefix}_hk_mpo` as keyof ReportFormValues },

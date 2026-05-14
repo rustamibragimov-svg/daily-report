@@ -218,10 +218,16 @@ function signature(): string {
           <td style="vertical-align:top;border-left:3px solid #e5e7eb;padding-left:18px;">
             <p style="margin:0 0 2px;font-size:14px;font-weight:bold;color:#1C1C2E;">Сардор Толяганов</p>
             <p style="margin:0 0 8px;font-size:12px;color:#6b7280;">Руководитель 3PL направления · Antria Group</p>
-            <p style="margin:0 0 3px;font-size:12px;color:#374151;">📱 +998 (90) 138-58-90 / +998 (90) 999-70-04</p>
-            <p style="margin:0 0 3px;font-size:12px;color:#374151;">✉️ <a href="mailto:sardor.tolyaganov@antria.uz" style="color:#2563eb;text-decoration:none;">sardor.tolyaganov@antria.uz</a></p>
-            <p style="margin:0 0 3px;font-size:12px;color:#374151;">✈️ <a href="https://t.me/Sardor_DM_PM" style="color:#2563eb;text-decoration:none;">t.me/Sardor_DM_PM</a></p>
-            <p style="margin:0;font-size:12px;color:#374151;">💬 WeChat: sardor_logistics</p>
+            <p style="margin:0 0 4px;font-size:12px;color:#374151;vertical-align:middle;">📱 +998 (90) 138-58-90 / +998 (90) 999-70-04</p>
+            <p style="margin:0 0 4px;font-size:12px;color:#374151;vertical-align:middle;">✉️ <a href="mailto:sardor.tolyaganov@antria.uz" style="color:#2563eb;text-decoration:none;">sardor.tolyaganov@antria.uz</a></p>
+            <p style="margin:0 0 4px;font-size:12px;color:#374151;line-height:16px;">
+              <img src="https://img.icons8.com/color/16/telegram-app--v1.png" alt="Telegram" width="16" height="16" style="display:inline;vertical-align:middle;margin-right:4px;" />
+              <a href="https://t.me/Sardor_DM_PM" style="color:#2563eb;text-decoration:none;vertical-align:middle;">t.me/Sardor_DM_PM</a>
+            </p>
+            <p style="margin:0;font-size:12px;color:#374151;line-height:16px;">
+              <img src="https://img.icons8.com/color/16/wechat.png" alt="WeChat" width="16" height="16" style="display:inline;vertical-align:middle;margin-right:4px;" />
+              <span style="vertical-align:middle;">sardor_logistics</span>
+            </p>
           </td>
         </tr>
       </table>

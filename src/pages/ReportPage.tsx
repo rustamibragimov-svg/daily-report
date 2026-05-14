@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import type { ReportFormValues } from '@/types/report';
 import { DEFAULT_FORM } from '@/types/report';
 import { todayISO, getWeekNumber, formatDateRu } from '@/lib/utils';
-import { useReportByDate, useSaveReport, useSendTestEmail } from '@/hooks/useReport';
+import { useReportByDate, useSaveReport, useSendTestEmail, sendReportEmail } from '@/hooks/useReport';
 import { exportReportToExcel } from '@/utils/excel';
 import { buildEmailHtml } from '@/utils/emailTemplate';
 import OperationalSection from '@/components/sections/OperationalSection';
@@ -48,6 +48,22 @@ export default function ReportPage() {
   };
 
   const onSubmit = (values: ReportFormValues) => save.mutate(values);
+
+  /** Save + send email to main recipient */
+  const handleSaveAndSend = handleSubmit(async (values) => {
+    try {
+      const data = await save.mutateAsync(values);
+      toast.success('Отчёт сохранён');
+      try {
+        await sendReportEmail(data);
+        toast.success('Отчёт отправлен на почту ✉️', { duration: 4000 });
+      } catch (emailErr) {
+        toast.error(`Ошибка отправки письма: ${(emailErr as Error).message}`, { duration: 6000 });
+      }
+    } catch {
+      // save error handled by useSaveReport.onError
+    }
+  });
 
   const handleExport = () => {
     if (!existing) { toast.warning('Сначала сохраните отчёт'); return; }
@@ -131,16 +147,6 @@ export default function ReportPage() {
               <Download size={14} className="text-gray-500" />
               Скачать Excel
             </button>
-
-            {/* Save */}
-            <button
-              type="submit"
-              disabled={save.isPending}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-[#1C1C2E] text-white hover:bg-[#2a2a40] disabled:opacity-60 transition-colors shadow-sm"
-            >
-              {save.isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-              Сохранить
-            </button>
           </div>
         </div>
 
@@ -197,7 +203,8 @@ export default function ReportPage() {
 
         <div className="flex justify-end pb-8">
           <button
-            type="submit"
+            type="button"
+            onClick={handleSaveAndSend}
             disabled={save.isPending}
             className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium rounded-lg bg-[#1C1C2E] text-white hover:bg-[#2a2a40] disabled:opacity-60 transition-colors shadow-sm"
           >

@@ -145,20 +145,21 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
     const s = (k: string) => (report[`${prefix}_sh_${k}` as K] as number) ?? 0;
     const g = (k: string) => (report[`${prefix}_hk_${k}` as K] as number) ?? 0;
 
-    // Canvas 345x67px pre-sized to match B+C cell area (46ch*7.5px × 50pt*96/72).
-    // Logo centered with natural proportions + white padding.
-    // String range twoCellAnchor — reliable on PC and mobile Excel.
+    // No merge on logo row — some mobile Excel apps skip images over merged cells.
+    // Image placed in unmerged B-C range. Filler row B-C also set explicitly.
     const b64    = prefix === 'uzum' ? UZUM_LOGO_B64 : CAINIAO_LOGO_B64;
     const logoId = wb.addImage({ base64: b64, extension: 'jpeg' });
 
-    mc(r, 2, r + 1, 3);
     sc(r, 2, '', { bg: 'white', bc: 'borderThin' });
+    sc(r, 3, '', { bg: 'white', bc: 'borderThin' });
     ws.addImage(logoId, `B${r}:C${r + 1}`);
     sc(r, 4, 'Всего',   { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 5, 'Шанхай',  { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 6, 'Гонконг', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     H(44); r++;
 
+    sc(r, 2, '', { bg: 'white' });
+    sc(r, 3, '', { bg: 'white' });
     for (let c = 4; c <= 6; c++) sc(r, c, '', { bg: 'altRow', bc: 'borderThin' });
     H(6); r++;
 

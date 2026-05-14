@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import type { DailyReport, IncidentRow } from '@/types/report';
 import { formatDateRu } from '@/lib/utils';
@@ -294,11 +295,39 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
   bigSection('CAINIAO', 'cainiao');
 }
 
+// ─── Fix ExcelJS cx=0 cy=0 bug ────────────────────────────────────────────────
+// ExcelJS always writes <a:ext cx="0" cy="0"/> in drawing XML.
+// Desktop Excel derives size from anchor coords (twoCell), so it renders fine.
+// Mobile Excel reads cx/cy for the actual pixel size → image invisible when 0.
+// Fix: post-process the XLSX ZIP and replace 0s with real EMU values.
+//   cx = cols B+C ≈ 46 chars × 7.5 px/char × 9525 EMU/px = 3 286 125 EMU
+//   cy = H(44) + H(6) = 50 pt × 12 700 EMU/pt = 635 000 EMU
+async function fixDrawingCxCy(buf: ArrayBuffer): Promise<ArrayBuffer> {
+  const zip = await JSZip.loadAsync(buf);
+
+  const drawingPaths = Object.keys(zip.files).filter(
+    n => n.startsWith('xl/drawings/drawing') && n.endsWith('.xml'),
+  );
+
+  for (const path of drawingPaths) {
+    const xml = await zip.files[path].async('string');
+    const fixed = xml.replace(/cx="0"\s+cy="0"/g, 'cx="3286125" cy="635000"');
+    zip.file(path, fixed);
+  }
+
+  return zip.generateAsync({
+    type: 'arraybuffer',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 6 },
+  }) as Promise<ArrayBuffer>;
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 export async function exportReportToExcel(report: DailyReport): Promise<void> {
   const wb = new ExcelJS.Workbook();
   buildWorkbook(wb, report);
-  const buf = await wb.xlsx.writeBuffer();
+  const raw = await wb.xlsx.writeBuffer();
+  const buf = await fixDrawingCxCy(raw as ArrayBuffer);
   saveAs(
     new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
     `3PL_daily_report_${report.report_date}.xlsx`,
@@ -308,8 +337,9 @@ export async function exportReportToExcel(report: DailyReport): Promise<void> {
 export async function generateExcelBase64(report: DailyReport): Promise<string> {
   const wb = new ExcelJS.Workbook();
   buildWorkbook(wb, report);
-  const buf = await wb.xlsx.writeBuffer();
-  const bytes = new Uint8Array(buf as ArrayBuffer);
+  const raw = await wb.xlsx.writeBuffer();
+  const buf = await fixDrawingCxCy(raw as ArrayBuffer);
+  const bytes = new Uint8Array(buf);
   let bin = '';
   for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
   return btoa(bin);

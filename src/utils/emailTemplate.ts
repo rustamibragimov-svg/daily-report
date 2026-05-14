@@ -115,7 +115,7 @@ function csTable(rows: Array<{ label: string; value: string | number; note?: str
   const tds = rows.map(({ label, value, note }) => {
     const valueCell = note
       ? `<td style="padding:9px 12px;background:#fff;font-size:13px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(value)}</td>
-      <td style="padding:9px 12px;background:#fff;font-size:11px;color:${C.orange};font-style:italic;border:1px solid ${C.border};white-space:nowrap;">${esc(note)}</td>`
+      <td style="padding:9px 12px;background:#fff;font-size:11px;color:${C.orange};font-style:italic;border:1px solid ${C.border};word-break:break-word;">${esc(note)}</td>`
       : `<td colspan="2" style="padding:9px 12px;background:#fff;font-size:13px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(value)}</td>`;
     return `
     <tr>

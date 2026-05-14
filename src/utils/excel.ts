@@ -157,25 +157,34 @@ async function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): Promise
     const g = (k: string) => (report[`${prefix}_hk_${k}` as K] as number) ?? 0;
 
     // Logo row + headers
+    // Give the logo area a proper height so the image fits
+    const logoRowHeight = 36;
+    const logoFillRowHeight = 8;
+
     if (logoId !== null) {
       mc(r, 2, r + 1, 3);
       sc(r, 2, '', { bg: 'white', bc: 'borderThin' });
+      sc(r + 1, 2, '', { bg: 'white' }); // filler cell keeps bg
+      // Use tl+br so the image anchors exactly to the merged cell bounds
       ws.addImage(logoId, {
         tl: { col: 1, row: r - 1 } as { col: number; row: number },
-        ext: { width: prefix === 'uzum' ? 90 : 70, height: 32 },
-      });
+        br: { col: 3, row: r + 1 } as { col: number; row: number },
+        editAs: 'oneCell',
+      } as Parameters<typeof ws.addImage>[1]);
     } else {
       mc(r, 2, r + 1, 3);
-      sc(r, 2, prefix === 'uzum' ? 'UZUM' : 'CAINIAO', { bold: true, size: 12, fg: prefix === 'uzum' ? 'secFg' : 'secFg', align: 'center' });
+      sc(r, 2, prefix === 'uzum' ? 'UZUM' : 'CAINIAO', {
+        bold: true, size: 12, fg: 'secFg', align: 'center',
+      });
     }
-    sc(r, 4, 'Всего', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
-    sc(r, 5, 'Шанхай', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
+    sc(r, 4, 'Всего',   { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
+    sc(r, 5, 'Шанхай',  { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     sc(r, 6, 'Гонконг', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
-    H(18); r++;
+    H(logoRowHeight); r++;
 
     // Filler row under logo
     for (let c = 4; c <= 6; c++) sc(r, c, '', { bg: 'altRow', bc: 'borderThin' });
-    H(6); r++;
+    H(logoFillRowHeight); r++;
 
     const metricRows = [
       ['Количество принятых партий:', 'count'],

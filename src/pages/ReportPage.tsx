@@ -120,23 +120,6 @@ export default function ReportPage() {
               Превью письма
             </button>
 
-            {/* Test send */}
-            <button
-              type="button"
-              onClick={() => {
-                if (!existing) { toast.warning('Сначала сохраните отчёт'); return; }
-                setTestModalOpen(true);
-              }}
-              disabled={sendTest.isPending}
-              className="flex items-center gap-2 px-3.5 py-2 text-sm rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
-              title="Тест-отправка на email"
-            >
-              {sendTest.isPending
-                ? <Loader2 size={14} className="animate-spin text-gray-500" />
-                : <Send size={14} className="text-gray-500" />}
-              Тест-отправка
-            </button>
-
             {/* Excel download */}
             <button
               type="button"

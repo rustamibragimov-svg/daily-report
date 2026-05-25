@@ -191,7 +191,7 @@ function metricsBlock(prefix: 'uzum' | 'cainiao', report: Partial<DailyReport>):
       <td style="padding:8px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};text-align:center;border:1px solid ${C.border};">Шанхай</td>
       <td style="padding:8px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};text-align:center;border:1px solid ${C.border};">Гонконг</td>
     </tr>
-    ${row('Количество отгруженных партий:', sh_c, hk_c)}
+    ${row(prefix === 'uzum' ? 'Количество принятых партий:' : 'Количество отгруженных партий:', sh_c, hk_c)}
     ${row('Общий вес партий, кг:', sh_w, hk_w)}
     ${row('Из них МКО, кг:', sh_mko, hk_mko)}
     ${row('Из них МПО, кг:', sh_mpo, hk_mpo)}

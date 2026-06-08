@@ -164,21 +164,22 @@ function metricsBlock(prefix: 'uzum' | 'cainiao', report: Partial<DailyReport>):
   const n = (k: string) => ((report[`${prefix}_${k}` as K] as number) ?? 0);
   const s = (k: string) => ((report[`${prefix}_${k}` as K] as string) ?? 'Нет данных');
 
-  const sh_c = n('sh_count'), hk_c = n('hk_count');
-  const sh_w = n('sh_weight'), hk_w = n('hk_weight');
-  const sh_mko = n('sh_mko'), hk_mko = n('hk_mko');
-  const sh_mpo = n('sh_mpo'), hk_mpo = n('hk_mpo');
-  const sh_auto = n('sh_auto'), hk_auto = n('hk_auto');
+  const sh_c = n('sh_count'), hk_c = n('hk_count'), gz_c = n('gz_count');
+  const sh_w = n('sh_weight'), hk_w = n('hk_weight'), gz_w = n('gz_weight');
+  const sh_mko = n('sh_mko'), hk_mko = n('hk_mko'), gz_mko = n('gz_mko');
+  const sh_mpo = n('sh_mpo'), hk_mpo = n('hk_mpo'), gz_mpo = n('gz_mpo');
+  const sh_auto = n('sh_auto'), hk_auto = n('hk_auto'), gz_auto = n('gz_auto');
 
   const logoUrl = `${BASE_URL}/${prefix}-logo.png`;
   const logoHeight = prefix === 'uzum' ? '28' : '26';
 
-  const row = (label: string, sh: number, hk: number) => `
+  const row = (label: string, sh: number, hk: number, gz: number) => `
     <tr>
       <td style="padding:7px 12px;background:${C.altRow};font-size:12px;color:${C.labelFg};border:1px solid ${C.border};">${esc(label)}</td>
-      <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${sh + hk}</td>
+      <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${sh + hk + gz}</td>
       <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${sh}</td>
       <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${hk}</td>
+      <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${gz}</td>
     </tr>`;
 
   return `
@@ -190,17 +191,19 @@ function metricsBlock(prefix: 'uzum' | 'cainiao', report: Partial<DailyReport>):
       <td style="padding:8px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};text-align:center;border:1px solid ${C.border};">Всего</td>
       <td style="padding:8px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};text-align:center;border:1px solid ${C.border};">Шанхай</td>
       <td style="padding:8px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};text-align:center;border:1px solid ${C.border};">Гонконг</td>
+      <td style="padding:8px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};text-align:center;border:1px solid ${C.border};">Гуанчжоу</td>
     </tr>
-    ${row(prefix === 'uzum' ? 'Количество принятых партий:' : 'Количество отгруженных партий:', sh_c, hk_c)}
-    ${row('Общий вес партий, кг:', sh_w, hk_w)}
-    ${row('Из них МКО, кг:', sh_mko, hk_mko)}
-    ${row('Из них МПО, кг:', sh_mpo, hk_mpo)}
-    ${row('Из них Автомат, кг:', sh_auto, hk_auto)}
+    ${row(prefix === 'uzum' ? 'Количество принятых партий:' : 'Количество отгруженных партий:', sh_c, hk_c, gz_c)}
+    ${row('Общий вес партий, кг:', sh_w, hk_w, gz_w)}
+    ${row('Из них МКО, кг:', sh_mko, hk_mko, gz_mko)}
+    ${row('Из них МПО, кг:', sh_mpo, hk_mpo, gz_mpo)}
+    ${row('Из них Автомат, кг:', sh_auto, hk_auto, gz_auto)}
     <tr>
       <td style="padding:7px 12px;background:${C.altRow};font-size:12px;color:${C.labelFg};border:1px solid ${C.border};">Соотношение vol vs brutto:</td>
       <td style="padding:7px 12px;background:#fff;font-size:12px;color:#9ca3af;text-align:center;border:1px solid ${C.border};">—</td>
       <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(s('sh_ratio'))}</td>
       <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(s('hk_ratio'))}</td>
+      <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(s('gz_ratio'))}</td>
     </tr>
   </table>
   ${opsBlock('Операции в Китае',          s('china_status'),    s('china_incident'),    BULLETS.china)}

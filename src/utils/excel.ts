@@ -33,8 +33,8 @@ type Clr = keyof typeof C;
 function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
   const ws = wb.addWorksheet('Ежедневная отчётность');
 
-  // Columns: A(2) B(26 label) C(20 val) D(13 total) E(15 sh) F(15 hk)
-  [2, 26, 20, 13, 15, 15].forEach((w, i) => (ws.getColumn(i + 1).width = w));
+  // Columns: A(2) B(26 label) C(20 val) D(13 total) E(15 sh) F(15 hk) G(15 gz)
+  [2, 26, 20, 13, 15, 15, 15].forEach((w, i) => (ws.getColumn(i + 1).width = w));
 
   let r = 1;
 
@@ -68,7 +68,7 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
   let secNum = 0;
   function secHead(title: string) {
     secNum++;
-    mc(r, 1, r, 6);
+    mc(r, 1, r, 7);
     sc(r, 1, `${secNum}. ${title}`, { bold: true, size: 12, fg: 'secFg', bg: 'secBg', indent: 1 });
     H(22); r++;
     gap(3);
@@ -77,7 +77,7 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
   /* Label (B) + status value (C-F merged), with data validation option */
   function statusRow(label: string, value: string, statusOptions?: string[]) {
     sc(r, 2, label, { bold: true, bg: 'labelBg', bc: 'borderThin' });
-    mc(r, 3, r, 6);
+    mc(r, 3, r, 7);
     const ok = !value.toLowerCase().includes('нарушени') && !value.toLowerCase().includes('присутствуют');
     sc(r, 3, value, {
       bold: true, size: 10, align: 'center',
@@ -98,7 +98,7 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
   function incidentTable(rows: IncidentRow[]) {
     // Header
     for (const [col, lbl] of [[2, 'Ответственный'], [3, 'Детали'], [4, 'Решение']] as [number, string][]) {
-      if (col === 4) mc(r, 4, r, 6);
+      if (col === 4) mc(r, 4, r, 7);
       sc(r, col, lbl, { bold: true, size: 9, fg: 'labelFg', bg: 'labelBg', align: 'center', bc: 'borderThin' });
     }
     H(14); r++;
@@ -111,7 +111,7 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
     for (const row of shown) {
       sc(r, 2, row.responsible ?? '', { size: 10, bg: 'white', bc: 'borderThin' });
       sc(r, 3, row.details ?? '', { size: 10, bg: 'white', bc: 'borderThin', wrap: true });
-      mc(r, 4, r, 6);
+      mc(r, 4, r, 7);
       sc(r, 4, row.resolution ?? '', { size: 10, bg: 'white', bc: 'borderThin', wrap: true });
       if (row.responsible || !filled.length) {
         ws.getCell(r, 2).dataValidation = {
@@ -130,10 +130,10 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
     if (note) {
       mc(r, 3, r, 4);
       sc(r, 3, value, { size: 11, align: 'center', bg: 'white', bc: 'borderThin' });
-      mc(r, 5, r, 6);
+      mc(r, 5, r, 7);
       sc(r, 5, note, { size: 9, italic: true, fg: 'orange', bg: 'white', bc: 'borderThin' });
     } else {
-      mc(r, 3, r, 6);
+      mc(r, 3, r, 7);
       sc(r, 3, value, { size: 11, align: 'center', bg: 'white', bc: 'borderThin' });
     }
     H(24); r++;
@@ -145,6 +145,7 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
     type K = keyof DailyReport;
     const s = (k: string) => (report[`${prefix}_sh_${k}` as K] as number) ?? 0;
     const g = (k: string) => (report[`${prefix}_hk_${k}` as K] as number) ?? 0;
+    const z = (k: string) => (report[`${prefix}_gz_${k}` as K] as number) ?? 0;
 
     // editAs:'twoCell' — size from anchor coords, NOT from cx/cy (which ExcelJS sets to 0).
     // cx=0,cy=0 caused mobile Excel to render nothing. twoCell fixes mobile display.
@@ -158,14 +159,15 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
       br: { col: 3, row: r + 1 } as { col: number; row: number },
       editAs: 'twoCell',
     } as Parameters<typeof ws.addImage>[1]);
-    sc(r, 4, 'Всего',   { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
-    sc(r, 5, 'Шанхай',  { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
-    sc(r, 6, 'Гонконг', { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
+    sc(r, 4, 'Всего',      { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
+    sc(r, 5, 'Шанхай',     { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
+    sc(r, 6, 'Гонконг',    { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
+    sc(r, 7, 'Гуанчжоу',   { bold: true, size: 10, align: 'center', bg: 'labelBg', bc: 'borderThin' });
     H(44); r++;
 
     sc(r, 2, '', { bg: 'white' });
     sc(r, 3, '', { bg: 'white' });
-    for (let c = 4; c <= 6; c++) sc(r, c, '', { bg: 'altRow', bc: 'borderThin' });
+    for (let c = 4; c <= 7; c++) sc(r, c, '', { bg: 'altRow', bc: 'borderThin' });
     H(6); r++;
 
     const metricRows = [
@@ -179,9 +181,10 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
     for (const [label, key] of metricRows) {
       mc(r, 2, r, 3);
       sc(r, 2, label, { size: 10, bg: 'altRow', bc: 'borderThin' });
-      sc(r, 4, s(key) + g(key), { size: 10, align: 'center', bg: 'white', bc: 'borderThin' });
+      sc(r, 4, s(key) + g(key) + z(key), { size: 10, align: 'center', bg: 'white', bc: 'borderThin' });
       sc(r, 5, s(key), { size: 10, align: 'center', bg: 'white', bc: 'borderThin' });
       sc(r, 6, g(key), { size: 10, align: 'center', bg: 'white', bc: 'borderThin' });
+      sc(r, 7, z(key), { size: 10, align: 'center', bg: 'white', bc: 'borderThin' });
       H(16); r++;
     }
 
@@ -191,6 +194,7 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
     sc(r, 4, '', { bg: 'white', bc: 'borderThin' });
     sc(r, 5, (report[`${prefix}_sh_ratio` as K] as string) || 'Нет данных', { size: 10, align: 'center', bg: 'white', bc: 'borderThin' });
     sc(r, 6, (report[`${prefix}_hk_ratio` as K] as string) || 'Нет данных', { size: 10, align: 'center', bg: 'white', bc: 'borderThin' });
+    sc(r, 7, (report[`${prefix}_gz_ratio` as K] as string) || 'Нет данных', { size: 10, align: 'center', bg: 'white', bc: 'borderThin' });
     H(16); r++;
     gap(5);
   }
@@ -209,7 +213,7 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
 
     // Status row
     sc(r, 2, label, { bold: true, bg: 'labelBg', bc: 'borderThin' });
-    mc(r, 3, r, 6);
+    mc(r, 3, r, 7);
     sc(r, 3, status, {
       bold: true, size: 11, align: 'center',
       fg: ok ? 'greenFg' : 'redFg',
@@ -223,7 +227,7 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
     H(20); r++;
 
     // Bullet points — height based on line count so nothing gets cut off
-    mc(r, 2, r, 6);
+    mc(r, 2, r, 7);
     const cell = ws.getCell(r, 2);
     cell.value = bullets;
     cell.font = { name: 'Calibri', size: 9,
@@ -238,7 +242,7 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
 
     // Incident description
     sc(r, 2, 'Описание индидента', { bold: true, bg: 'labelBg', bc: 'borderThin' });
-    mc(r, 3, r, 6);
+    mc(r, 3, r, 7);
     sc(r, 3, incident, { size: 10, wrap: true, bg: 'white', bc: 'borderThin' });
     H(incident ? 38 : 18); r++;
     gap(4);
@@ -256,7 +260,7 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
   }
 
   // ─── TITLE ────────────────────────────────────────────────────────────────
-  mc(r, 1, r, 6);
+  mc(r, 1, r, 7);
   sc(r, 1, '3PL ЕЖЕДНЕВНЫЙ ОТЧЁТ', { bold: true, size: 14, fg: 'white', bg: 'secFg', align: 'center' });
   H(32); r++;
 
@@ -264,7 +268,7 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
   sc(r, 1, 'Дата отчёта', { bold: true, bg: 'labelBg', bc: 'borderThin' });
   sc(r, 3, formatDateRu(report.report_date), { bold: true, size: 11, bc: 'borderThin' });
   sc(r, 4, 'Неделя', { bold: true, bg: 'labelBg', bc: 'borderThin', align: 'center' });
-  mc(r, 5, r, 6);
+  mc(r, 5, r, 7);
   sc(r, 5, report.week_number, { bold: true, size: 11, bc: 'borderThin' });
   H(20); r++;
   gap(6);

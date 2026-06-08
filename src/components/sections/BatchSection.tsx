@@ -97,27 +97,33 @@ export default function BatchSection({ prefix, title, headerColor, register, wat
     void fetch(reportDate, project, (m) => {
       setValue(`${prefix}_sh_count` as keyof ReportFormValues, m.sh_count);
       setValue(`${prefix}_hk_count` as keyof ReportFormValues, m.hk_count);
+      setValue(`${prefix}_gz_count` as keyof ReportFormValues, m.gz_count);
       setValue(`${prefix}_sh_weight` as keyof ReportFormValues, m.sh_weight);
       setValue(`${prefix}_hk_weight` as keyof ReportFormValues, m.hk_weight);
+      setValue(`${prefix}_gz_weight` as keyof ReportFormValues, m.gz_weight);
       setValue(`${prefix}_sh_mko` as keyof ReportFormValues, m.sh_mko);
       setValue(`${prefix}_hk_mko` as keyof ReportFormValues, m.hk_mko);
+      setValue(`${prefix}_gz_mko` as keyof ReportFormValues, m.gz_mko);
       setValue(`${prefix}_sh_mpo` as keyof ReportFormValues, m.sh_mpo);
       setValue(`${prefix}_hk_mpo` as keyof ReportFormValues, m.hk_mpo);
+      setValue(`${prefix}_gz_mpo` as keyof ReportFormValues, m.gz_mpo);
       setValue(`${prefix}_sh_auto` as keyof ReportFormValues, m.sh_auto);
       setValue(`${prefix}_hk_auto` as keyof ReportFormValues, m.hk_auto);
+      setValue(`${prefix}_gz_auto` as keyof ReportFormValues, m.gz_auto);
       setValue(`${prefix}_sh_ratio` as keyof ReportFormValues, m.sh_ratio);
       setValue(`${prefix}_hk_ratio` as keyof ReportFormValues, m.hk_ratio);
+      setValue(`${prefix}_gz_ratio` as keyof ReportFormValues, m.gz_ratio);
     });
   };
   const n = (k: string) => (Number(watch(`${prefix}_${k}` as keyof ReportFormValues)) || 0);
   const fmt = (v: number) => v % 1 === 0 ? String(v) : v.toFixed(2);
 
-  const rows: { label: string; total: string; sh: keyof ReportFormValues; hk: keyof ReportFormValues }[] = [
-    { label: prefix === 'uzum' ? 'Кол-во принятых партий' : 'Кол-во отгруженных партий', total: fmt(n('sh_count') + n('hk_count')), sh: `${prefix}_sh_count` as keyof ReportFormValues, hk: `${prefix}_hk_count` as keyof ReportFormValues },
-    { label: 'Общий вес партий, кг',   total: fmt(n('sh_weight') + n('hk_weight')), sh: `${prefix}_sh_weight` as keyof ReportFormValues, hk: `${prefix}_hk_weight` as keyof ReportFormValues },
-    { label: 'МКО, кг',                total: fmt(n('sh_mko') + n('hk_mko')), sh: `${prefix}_sh_mko` as keyof ReportFormValues, hk: `${prefix}_hk_mko` as keyof ReportFormValues },
-    { label: 'МПО, кг',                total: fmt(n('sh_mpo') + n('hk_mpo')), sh: `${prefix}_sh_mpo` as keyof ReportFormValues, hk: `${prefix}_hk_mpo` as keyof ReportFormValues },
-    { label: 'Автомат, кг',            total: fmt(n('sh_auto') + n('hk_auto')), sh: `${prefix}_sh_auto` as keyof ReportFormValues, hk: `${prefix}_hk_auto` as keyof ReportFormValues },
+  const rows: { label: string; total: string; sh: keyof ReportFormValues; hk: keyof ReportFormValues; gz: keyof ReportFormValues }[] = [
+    { label: prefix === 'uzum' ? 'Кол-во принятых партий' : 'Кол-во отгруженных партий', total: fmt(n('sh_count') + n('hk_count') + n('gz_count')), sh: `${prefix}_sh_count` as keyof ReportFormValues, hk: `${prefix}_hk_count` as keyof ReportFormValues, gz: `${prefix}_gz_count` as keyof ReportFormValues },
+    { label: 'Общий вес партий, кг',   total: fmt(n('sh_weight') + n('hk_weight') + n('gz_weight')), sh: `${prefix}_sh_weight` as keyof ReportFormValues, hk: `${prefix}_hk_weight` as keyof ReportFormValues, gz: `${prefix}_gz_weight` as keyof ReportFormValues },
+    { label: 'МКО, кг',                total: fmt(n('sh_mko') + n('hk_mko') + n('gz_mko')), sh: `${prefix}_sh_mko` as keyof ReportFormValues, hk: `${prefix}_hk_mko` as keyof ReportFormValues, gz: `${prefix}_gz_mko` as keyof ReportFormValues },
+    { label: 'МПО, кг',                total: fmt(n('sh_mpo') + n('hk_mpo') + n('gz_mpo')), sh: `${prefix}_sh_mpo` as keyof ReportFormValues, hk: `${prefix}_hk_mpo` as keyof ReportFormValues, gz: `${prefix}_gz_mpo` as keyof ReportFormValues },
+    { label: 'Автомат, кг',            total: fmt(n('sh_auto') + n('hk_auto') + n('gz_auto')), sh: `${prefix}_sh_auto` as keyof ReportFormValues, hk: `${prefix}_hk_auto` as keyof ReportFormValues, gz: `${prefix}_gz_auto` as keyof ReportFormValues },
   ];
 
   return (
@@ -155,15 +161,17 @@ export default function BatchSection({ prefix, title, headerColor, register, wat
                 <th className="metrics-th text-center w-28">Всего</th>
                 <th className="metrics-th text-center w-36">Шанхай</th>
                 <th className="metrics-th text-center w-36">Гонконг</th>
+                <th className="metrics-th text-center w-36">Гуанчжоу</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ label, total, sh, hk }) => (
+              {rows.map(({ label, total, sh, hk, gz }) => (
                 <tr key={label} className="hover:bg-gray-50/60">
                   <td className="metrics-td font-medium text-gray-700">{label}</td>
                   <td className="total-cell text-center">{total}</td>
                   <td className="metrics-td"><NumInput name={sh} register={register} /></td>
                   <td className="metrics-td"><NumInput name={hk} register={register} /></td>
+                  <td className="metrics-td"><NumInput name={gz} register={register} /></td>
                 </tr>
               ))}
               <tr className="hover:bg-gray-50/60">
@@ -176,6 +184,10 @@ export default function BatchSection({ prefix, title, headerColor, register, wat
                 <td className="metrics-td">
                   <input type="text" className="input-base text-center py-1.5 text-sm" placeholder="Нет данных"
                     {...register(`${prefix}_hk_ratio` as keyof ReportFormValues)} />
+                </td>
+                <td className="metrics-td">
+                  <input type="text" className="input-base text-center py-1.5 text-sm" placeholder="Нет данных"
+                    {...register(`${prefix}_gz_ratio` as keyof ReportFormValues)} />
                 </td>
               </tr>
             </tbody>

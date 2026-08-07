@@ -169,21 +169,22 @@ function opsBlock(label: string, status: string, incident: string, bullets: stri
 
 /** Fix #3: logo images for UZUM and Cainiao */
 // deno-lint-ignore no-explicit-any
-function metricsBlock(report: any, prefix: string): string {
+function metricsBlock(report: any, prefix: 'uzum' | 'cainiao'): string {
   const n = (k: string) => report[k] ?? 0;
   const ns = (k: string) => report[k] ?? 'Нет данных';
 
   const logoUrl = `${BASE_URL}/${prefix}-logo.png`;
   const logoHeight = prefix === 'uzum' ? '28' : '26';
 
-  const row = (label: string, shK: string, hkK: string) => {
-    const sh = n(shK), hk = n(hkK);
+  const row = (label: string, shK: string, hkK: string, gzK: string) => {
+    const sh = n(shK), hk = n(hkK), gz = n(gzK);
     return `
     <tr>
       <td style="padding:7px 12px;background:${C.altRow};font-size:12px;color:${C.labelFg};border:1px solid ${C.border};">${esc(label)}</td>
-      <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${sh + hk}</td>
-      <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${sh}</td>
-      <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${hk}</td>
+      <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(sh + hk + gz)}</td>
+      <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(sh)}</td>
+      <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(hk)}</td>
+      <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(gz)}</td>
     </tr>`;
   };
 
@@ -196,17 +197,19 @@ function metricsBlock(report: any, prefix: string): string {
       <td style="padding:8px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};text-align:center;border:1px solid ${C.border};">Всего</td>
       <td style="padding:8px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};text-align:center;border:1px solid ${C.border};">Шанхай</td>
       <td style="padding:8px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};text-align:center;border:1px solid ${C.border};">Гонконг</td>
+      <td style="padding:8px 12px;background:${C.labelBg};font-size:11px;font-weight:bold;color:${C.labelFg};text-align:center;border:1px solid ${C.border};">Гуанчжоу</td>
     </tr>
-    ${row('Количество принятых партий:', `${prefix}_sh_count`,  `${prefix}_hk_count`)}
-    ${row('Общий вес партий, кг:',       `${prefix}_sh_weight`, `${prefix}_hk_weight`)}
-    ${row('Из них МКО, кг:',             `${prefix}_sh_mko`,    `${prefix}_hk_mko`)}
-    ${row('Из них МПО, кг:',             `${prefix}_sh_mpo`,    `${prefix}_hk_mpo`)}
-    ${row('Из них Автомат, кг:',         `${prefix}_sh_auto`,   `${prefix}_hk_auto`)}
+    ${row(prefix === 'uzum' ? 'Количество принятых партий:' : 'Количество отгруженных партий:', `${prefix}_sh_count`,  `${prefix}_hk_count`,  `${prefix}_gz_count`)}
+    ${row('Общий вес партий, кг:',       `${prefix}_sh_weight`, `${prefix}_hk_weight`, `${prefix}_gz_weight`)}
+    ${row('Из них МКО, кг:',             `${prefix}_sh_mko`,    `${prefix}_hk_mko`,    `${prefix}_gz_mko`)}
+    ${row('Из них МПО, кг:',             `${prefix}_sh_mpo`,    `${prefix}_hk_mpo`,    `${prefix}_gz_mpo`)}
+    ${row('Из них Автомат, кг:',         `${prefix}_sh_auto`,   `${prefix}_hk_auto`,   `${prefix}_gz_auto`)}
     <tr>
       <td style="padding:7px 12px;background:${C.altRow};font-size:12px;color:${C.labelFg};border:1px solid ${C.border};">Соотношение vol vs brutto:</td>
       <td style="padding:7px 12px;background:#fff;font-size:12px;color:#9ca3af;text-align:center;border:1px solid ${C.border};">—</td>
       <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(ns(`${prefix}_sh_ratio`))}</td>
       <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(ns(`${prefix}_hk_ratio`))}</td>
+      <td style="padding:7px 12px;background:#fff;font-size:12px;color:#1f2937;text-align:center;border:1px solid ${C.border};">${esc(ns(`${prefix}_gz_ratio`))}</td>
     </tr>
   </table>
   ${opsBlock('Операции в Китае',          report[`${prefix}_china_status`]    ?? 'Без инцидентов', report[`${prefix}_china_incident`]    ?? '', BULLETS.china)}

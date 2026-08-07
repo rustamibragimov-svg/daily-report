@@ -81,3 +81,7 @@ create trigger daily_reports_updated_at
 -- RLS: enable but allow all (internal tool)
 alter table public.daily_reports enable row level security;
 create policy "allow_all" on public.daily_reports for all using (true) with check (true);
+
+-- Supabase Data API change: explicit grants required from May 30 2026
+-- (GRANTs are idempotent — safe to re-run)
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.daily_reports TO anon, authenticated, service_role;

@@ -21,3 +21,7 @@ on conflict do nothing;
 
 create policy "allow_all_storage" on storage.objects
 for all using (bucket_id = 'report-files') with check (bucket_id = 'report-files');
+
+-- Supabase Data API change: explicit grants required from May 30 2026
+-- (GRANTs are idempotent — safe to re-run)
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.report_attachments TO anon, authenticated, service_role;

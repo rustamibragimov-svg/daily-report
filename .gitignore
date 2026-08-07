@@ -3,3 +3,8 @@ dist/
 .env.local
 .env
 
+# Supabase CLI local state
+supabase/.temp/
+
+# Локальные артефакты выгрузки Excel
+test_output*.xlsx

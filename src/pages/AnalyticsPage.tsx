@@ -1,28 +1,18 @@
+import { useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, Cell,
 } from 'recharts';
 import { Loader2, AlertCircle, BarChart3, TrendingUp, Paperclip, Download } from 'lucide-react';
 import { useReportHistory } from '@/hooks/useReport';
+import { useEmployees, UNKNOWN_EMPLOYEE_COLOR } from '@/hooks/useEmployees';
 import { useAllAttachments, getFileUrl, formatFileSize } from '@/hooks/useAttachments';
 import type { DailyReport, IncidentRow } from '@/types/report';
+import type { EmployeeFilter, RosterEntry } from '@/lib/employees';
+import { EMPLOYEE_FILTER_LABELS, buildRoster, filterRoster } from '@/lib/employees';
 import { formatDateRu } from '@/lib/utils';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const EMPLOYEES = ['Рустам Ибрагимов', 'Идель Ибрагимов', 'Наталья Матвиенко'];
-
-const EMP_COLOR: Record<string, string> = {
-  'Рустам Ибрагимов': '#3B82F6',
-  'Идель Ибрагимов': '#F97316',
-  'Наталья Матвиенко': '#A855F7',
-};
-
-const EMP_SHORT: Record<string, string> = {
-  'Рустам Ибрагимов': 'Рустам',
-  'Идель Ибрагимов': 'Идель',
-  'Наталья Матвиенко': 'Наталья',
-};
+const FILTER_ORDER: EmployeeFilter[] = ['all', 'active', 'archived'];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -57,10 +47,13 @@ function extractViolations(reports: DailyReport[]): ViolationEntry[] {
   for (const report of reports) {
     const rows = (report.accuracy_rows ?? []) as IncidentRow[];
     for (const row of rows) {
-      if (!row.responsible) continue;
+      // Тримминг обязателен: справочник тоже хранит имена без краевых пробелов,
+      // иначе «Иван Петров » не совпадёт с сотрудником и уедет в «не в справочнике».
+      const responsible = row.responsible?.trim();
+      if (!responsible) continue;
       entries.push({
         date: report.report_date,
-        responsible: row.responsible,
+        responsible,
         details: row.details ?? '',
         resolution: row.resolution ?? '',
         week: isoWeekLabel(report.report_date),
@@ -74,7 +67,11 @@ function extractViolations(reports: DailyReport[]): ViolationEntry[] {
 
 type ChartRow = Record<string, string | number>;
 
-function buildGrouped(violations: ViolationEntry[], key: 'week' | 'monthSort'): ChartRow[] {
+function buildGrouped(
+  violations: ViolationEntry[],
+  roster: RosterEntry[],
+  key: 'week' | 'monthSort',
+): ChartRow[] {
   const sortKey = key === 'week' ? 'week' : 'monthSort';
   const labelKey = key === 'week' ? 'week' : 'month';
 
@@ -84,9 +81,11 @@ function buildGrouped(violations: ViolationEntry[], key: 'week' | 'monthSort'): 
     const subset = violations.filter(v => (v[sortKey as keyof ViolationEntry] as string) === period);
     const row: ChartRow = { label: subset[0][labelKey as keyof ViolationEntry] as string };
     let total = 0;
-    for (const emp of EMPLOYEES) {
-      const count = subset.filter(v => v.responsible === emp).length;
-      row[EMP_SHORT[emp]] = count;
+    // Ключ серии — ФИО, а не короткая подпись: две одинаковые подписи иначе
+    // молча сливаются в один столбец.
+    for (const emp of roster) {
+      const count = subset.filter(v => v.responsible === emp.fullName).length;
+      row[emp.fullName] = count;
       total += count;
     }
     row['Всего'] = total;
@@ -129,7 +128,7 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
   );
 }
 
-function StackedBar({ data }: { data: ChartRow[] }) {
+function StackedBar({ data, roster }: { data: ChartRow[]; roster: RosterEntry[] }) {
   if (!data.length) return <EmptyChart />;
   return (
     <ResponsiveContainer width="100%" height={220}>
@@ -139,11 +138,49 @@ function StackedBar({ data }: { data: ChartRow[] }) {
         <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
         <Tooltip contentStyle={{ fontSize: 12 }} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
-        {EMPLOYEES.map(emp => (
-          <Bar key={emp} dataKey={EMP_SHORT[emp]} stackId="a" fill={EMP_COLOR[emp]} radius={[0, 0, 0, 0]} />
+        {roster.map(emp => (
+          <Bar
+            key={emp.fullName}
+            dataKey={emp.fullName}
+            name={emp.shortName}
+            stackId="a"
+            fill={emp.color}
+            radius={[0, 0, 0, 0]}
+          />
         ))}
       </BarChart>
     </ResponsiveContainer>
+  );
+}
+
+function FilterTabs({
+  value,
+  counts,
+  onChange,
+}: {
+  value: EmployeeFilter;
+  counts: Record<EmployeeFilter, number>;
+  onChange: (next: EmployeeFilter) => void;
+}) {
+  return (
+    <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white p-0.5 shadow-sm">
+      {FILTER_ORDER.map(f => (
+        <button
+          key={f}
+          type="button"
+          onClick={() => onChange(f)}
+          aria-pressed={value === f}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            value === f ? 'bg-[#1C1C2E] text-white' : 'text-gray-500 hover:text-gray-800'
+          }`}
+        >
+          {EMPLOYEE_FILTER_LABELS[f]}
+          <span className={value === f ? 'ml-1.5 text-white/60' : 'ml-1.5 text-gray-300'}>
+            {counts[f]}
+          </span>
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -233,8 +270,10 @@ function AttachmentsBlock() {
 
 export default function AnalyticsPage() {
   const { data: reports, isLoading, isError } = useReportHistory();
+  const { data: employees, isLoading: employeesLoading, isError: employeesFailed } = useEmployees();
+  const [filter, setFilter] = useState<EmployeeFilter>('all');
 
-  if (isLoading) {
+  if (isLoading || employeesLoading) {
     return (
       <div className="flex items-center justify-center py-24 text-gray-400">
         <Loader2 size={20} className="animate-spin mr-2" /> Загрузка...
@@ -250,16 +289,35 @@ export default function AnalyticsPage() {
     );
   }
 
-  const violations = extractViolations(reports ?? []);
-  const weeklyAll = buildGrouped(violations, 'week');
-  const monthlyAll = buildGrouped(violations, 'monthSort');
+  const allViolations = extractViolations(reports ?? []);
 
-  const totalByEmp = EMPLOYEES.reduce<Record<string, number>>((acc, emp) => {
-    acc[emp] = violations.filter(v => v.responsible === emp).length;
+  // Справочник + имена, которые есть только в отчётах, — чтобы ни одно
+  // нарушение не выпало из графиков незаметно.
+  const roster = buildRoster(employees ?? [], allViolations.map(v => v.responsible));
+  const byName = new Map(roster.map(e => [e.fullName, e]));
+  const visibleRoster = filterRoster(roster, filter);
+  const visibleNames = new Set(visibleRoster.map(e => e.fullName));
+  const violations = allViolations.filter(v => visibleNames.has(v.responsible));
+
+  const counts = { all: allViolations.length, active: 0, archived: 0 } satisfies Record<EmployeeFilter, number>;
+  for (const v of allViolations) {
+    const entry = byName.get(v.responsible);
+    if (entry?.isActive) counts.active++;
+    else if (entry) counts.archived++;
+  }
+
+  const weeklyAll = buildGrouped(violations, visibleRoster, 'week');
+  const monthlyAll = buildGrouped(violations, visibleRoster, 'monthSort');
+
+  const totalByEmp = visibleRoster.reduce<Record<string, number>>((acc, emp) => {
+    acc[emp.fullName] = violations.filter(v => v.responsible === emp.fullName).length;
     return acc;
   }, {});
 
-  if (!violations.length) {
+  const colorOf = (name: string) => byName.get(name)?.color ?? UNKNOWN_EMPLOYEE_COLOR;
+  const shortOf = (name: string) => byName.get(name)?.shortName ?? name;
+
+  if (!allViolations.length) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-gray-400 gap-3">
         <BarChart3 size={40} strokeWidth={1} />
@@ -272,100 +330,140 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-8 pb-12">
       {/* Header */}
-      <div>
-        <h1 className="page-title">Аналитика по нарушениям</h1>
-        <p className="text-sm text-gray-400 mt-0.5">
-          Данные из раздела «Точность данных» ежедневных отчётов
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="page-title">Аналитика по нарушениям</h1>
+          <p className="text-sm text-gray-400 mt-0.5">
+            Данные из раздела «Точность данных» ежедневных отчётов
+          </p>
+        </div>
+        <FilterTabs value={filter} counts={counts} onChange={setFilter} />
+      </div>
+
+      {employeesFailed && (
+        <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-2.5">
+          Справочник сотрудников недоступен — цвета, подписи и фильтр по статусу
+          работают некорректно. Проверьте таблицу <code>employees</code> в Supabase.
         </p>
-      </div>
+      )}
 
-      {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
-        <KpiCard label="Всего нарушений" value={violations.length} sub={`за ${(reports ?? []).length} отчётов`} />
-        {EMPLOYEES.map(emp => (
-          <KpiCard key={emp} label={EMP_SHORT[emp]} value={totalByEmp[emp]} sub="нарушений" />
-        ))}
-      </div>
-
-      {/* ── Общие графики ── */}
-      <div className="space-y-3">
-        <SectionTitle>Все сотрудники</SectionTitle>
-        <div className="grid grid-cols-2 gap-4">
-          <ChartCard title="По неделям">
-            <StackedBar data={weeklyAll} />
-          </ChartCard>
-          <ChartCard title="По месяцам">
-            <StackedBar data={monthlyAll} />
-          </ChartCard>
+      {!visibleRoster.length || !violations.length ? (
+        <div className="section-card flex flex-col items-center justify-center py-16 text-gray-400 gap-2">
+          <BarChart3 size={32} strokeWidth={1} />
+          <p className="text-sm">Нет нарушений по фильтру «{EMPLOYEE_FILTER_LABELS[filter]}»</p>
+          <p className="text-xs text-gray-300">Выберите другой фильтр выше</p>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* KPIs */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <KpiCard
+              label="Всего нарушений"
+              value={violations.length}
+              sub={`за ${(reports ?? []).length} отчётов`}
+            />
+            {visibleRoster.map(emp => (
+              <KpiCard
+                key={emp.fullName}
+                label={emp.shortName}
+                value={totalByEmp[emp.fullName]}
+                sub={
+                  emp.isActive
+                    ? 'нарушений'
+                    : `нарушений · ${emp.isOrphan ? 'не в справочнике' : 'уволен'}`
+                }
+              />
+            ))}
+          </div>
 
-      {/* ── По каждому сотруднику ── */}
-      <div className="space-y-3">
-        <SectionTitle>По сотрудникам</SectionTitle>
-        <div className="space-y-4">
-          {EMPLOYEES.map(emp => (
-            <div key={emp} className="section-card overflow-hidden">
-              <div
-                className="px-5 py-3 border-b border-gray-100 flex items-center justify-between"
-                style={{ borderLeftWidth: 4, borderLeftColor: EMP_COLOR[emp] }}
-              >
-                <span className="font-semibold text-sm text-gray-800">{emp}</span>
-                <span
-                  className="text-xs font-bold px-2.5 py-0.5 rounded-full text-white"
-                  style={{ backgroundColor: EMP_COLOR[emp] }}
-                >
-                  {totalByEmp[emp]} нарушений
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-0 divide-x divide-gray-100">
-                <div className="p-5">
-                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-3">По неделям</p>
-                  <SingleBar data={buildForEmployee(violations, emp, 'week')} color={EMP_COLOR[emp]} />
-                </div>
-                <div className="p-5">
-                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-3">По месяцам</p>
-                  <SingleBar data={buildForEmployee(violations, emp, 'monthSort')} color={EMP_COLOR[emp]} />
-                </div>
-              </div>
+          {/* ── Общие графики ── */}
+          <div className="space-y-3">
+            <SectionTitle>Все сотрудники</SectionTitle>
+            <div className="grid grid-cols-2 gap-4">
+              <ChartCard title="По неделям">
+                <StackedBar data={weeklyAll} roster={visibleRoster} />
+              </ChartCard>
+              <ChartCard title="По месяцам">
+                <StackedBar data={monthlyAll} roster={visibleRoster} />
+              </ChartCard>
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* ── Детали нарушений ── */}
-      <div className="space-y-3">
-        <SectionTitle>Детали нарушений</SectionTitle>
-        <div className="section-card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="metrics-th text-left w-28">Дата</th>
-                <th className="metrics-th text-left w-44">Ответственный</th>
-                <th className="metrics-th text-left">Нарушение</th>
-                <th className="metrics-th text-left w-48">Решение</th>
-              </tr>
-            </thead>
-            <tbody>
-              {violations.map((v, i) => (
-                <tr key={i} className="hover:bg-gray-50/60 transition-colors">
-                  <td className="metrics-td text-gray-500 whitespace-nowrap">{formatDateRu(v.date)}</td>
-                  <td className="metrics-td">
-                    <span
-                      className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full text-white"
-                      style={{ backgroundColor: EMP_COLOR[v.responsible] ?? '#6B7280' }}
-                    >
-                      {EMP_SHORT[v.responsible] ?? v.responsible}
+          {/* ── По каждому сотруднику ── */}
+          <div className="space-y-3">
+            <SectionTitle>По сотрудникам</SectionTitle>
+            <div className="space-y-4">
+              {visibleRoster.map(emp => (
+                <div key={emp.fullName} className="section-card overflow-hidden">
+                  <div
+                    className="px-5 py-3 border-b border-gray-100 flex items-center justify-between"
+                    style={{ borderLeftWidth: 4, borderLeftColor: emp.color }}
+                  >
+                    <span className="font-semibold text-sm text-gray-800 flex items-center gap-2">
+                      {emp.fullName}
+                      {!emp.isActive && (
+                        <span className="text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
+                          {emp.isOrphan ? 'не в справочнике' : 'уволен'}
+                        </span>
+                      )}
                     </span>
-                  </td>
-                  <td className="metrics-td text-gray-700">{v.details || '—'}</td>
-                  <td className="metrics-td text-gray-500 text-xs">{v.resolution || '—'}</td>
-                </tr>
+                    <span
+                      className="text-xs font-bold px-2.5 py-0.5 rounded-full text-white"
+                      style={{ backgroundColor: emp.color }}
+                    >
+                      {totalByEmp[emp.fullName]} нарушений
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-0 divide-x divide-gray-100">
+                    <div className="p-5">
+                      <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-3">По неделям</p>
+                      <SingleBar data={buildForEmployee(violations, emp.fullName, 'week')} color={emp.color} />
+                    </div>
+                    <div className="p-5">
+                      <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-3">По месяцам</p>
+                      <SingleBar data={buildForEmployee(violations, emp.fullName, 'monthSort')} color={emp.color} />
+                    </div>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </div>
+          </div>
+
+          {/* ── Детали нарушений ── */}
+          <div className="space-y-3">
+            <SectionTitle>Детали нарушений</SectionTitle>
+            <div className="section-card overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="metrics-th text-left w-28">Дата</th>
+                    <th className="metrics-th text-left w-44">Ответственный</th>
+                    <th className="metrics-th text-left">Нарушение</th>
+                    <th className="metrics-th text-left w-48">Решение</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {violations.map((v, i) => (
+                    <tr key={`${v.date}|${v.responsible}|${i}`} className="hover:bg-gray-50/60 transition-colors">
+                      <td className="metrics-td text-gray-500 whitespace-nowrap">{formatDateRu(v.date)}</td>
+                      <td className="metrics-td">
+                        <span
+                          className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full text-white"
+                          style={{ backgroundColor: colorOf(v.responsible) }}
+                        >
+                          {shortOf(v.responsible)}
+                        </span>
+                      </td>
+                      <td className="metrics-td text-gray-700">{v.details || '—'}</td>
+                      <td className="metrics-td text-gray-500 text-xs">{v.resolution || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ── Вложения по отчётам ── */}
       <div className="space-y-3">

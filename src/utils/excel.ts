@@ -30,7 +30,41 @@ type Clr = keyof typeof C;
 
 
 // ─── Core builder ─────────────────────────────────────────────────────────────
-function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
+/** Лимит Excel на строку списка валидации, включая обрамляющие кавычки. */
+const VALIDATION_MAX_LEN = 255;
+
+/**
+ * Excel-список для выпадающего меню: запятая и кавычка — разделители внутри
+ * `formulae`, поэтому имена с ними в список не попадают (иначе он молча ломается).
+ * При переполнении лимита список обрезается, а не отбрасывается целиком —
+ * неполный выпадающий список полезнее отсутствующего.
+ */
+function buildResponsibleValidation(options: string[]): string | null {
+  const safe = options.filter(o => o && !o.includes(',') && !o.includes('"'));
+
+  const picked: string[] = [];
+  let len = 2; // открывающая и закрывающая кавычки
+  for (const name of safe) {
+    const cost = name.length + (picked.length ? 1 : 0); // +1 на запятую-разделитель
+    if (len + cost > VALIDATION_MAX_LEN) break;
+    picked.push(name);
+    len += cost;
+  }
+
+  return picked.length ? `"${picked.join(',')}"` : null;
+}
+
+/**
+ * Excel трактует значение, начинающееся с = + - @ (или управляющего символа),
+ * как формулу. Имена сотрудников теперь приходят из редактируемого справочника,
+ * поэтому текстовые ячейки экранируем (CWE-1236).
+ */
+function safeCellText(value: string): string {
+  return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+}
+
+function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport, responsibleOptions: string[]): void {
+  const responsibleValidation = buildResponsibleValidation(responsibleOptions);
   const ws = wb.addWorksheet('Ежедневная отчётность');
 
   // Columns: A(2) B(26 label) C(20 val) D(13 total) E(15 sh) F(15 hk) G(15 gz)
@@ -109,14 +143,14 @@ function buildWorkbook(wb: ExcelJS.Workbook, report: DailyReport): void {
     const shown = display.slice(0, Math.max(3, display.length));
 
     for (const row of shown) {
-      sc(r, 2, row.responsible ?? '', { size: 10, bg: 'white', bc: 'borderThin' });
-      sc(r, 3, row.details ?? '', { size: 10, bg: 'white', bc: 'borderThin', wrap: true });
+      sc(r, 2, safeCellText(row.responsible ?? ''), { size: 10, bg: 'white', bc: 'borderThin' });
+      sc(r, 3, safeCellText(row.details ?? ''), { size: 10, bg: 'white', bc: 'borderThin', wrap: true });
       mc(r, 4, r, 7);
-      sc(r, 4, row.resolution ?? '', { size: 10, bg: 'white', bc: 'borderThin', wrap: true });
-      if (row.responsible || !filled.length) {
+      sc(r, 4, safeCellText(row.resolution ?? ''), { size: 10, bg: 'white', bc: 'borderThin', wrap: true });
+      if (responsibleValidation && (row.responsible || !filled.length)) {
         ws.getCell(r, 2).dataValidation = {
           type: 'list',
-          formulae: ['"Наталья Матвиенко,Идель Ибрагимов,Рустам Ибрагимов"'],
+          formulae: [responsibleValidation],
         };
       }
       H(18); r++;
@@ -327,9 +361,12 @@ async function fixDrawingCxCy(buf: ArrayBuffer): Promise<ArrayBuffer> {
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
-export async function exportReportToExcel(report: DailyReport): Promise<void> {
+export async function exportReportToExcel(
+  report: DailyReport,
+  responsibleOptions: string[] = [],
+): Promise<void> {
   const wb = new ExcelJS.Workbook();
-  buildWorkbook(wb, report);
+  buildWorkbook(wb, report, responsibleOptions);
   const raw = await wb.xlsx.writeBuffer();
   const buf = await fixDrawingCxCy(raw as ArrayBuffer);
   saveAs(
@@ -338,9 +375,12 @@ export async function exportReportToExcel(report: DailyReport): Promise<void> {
   );
 }
 
-export async function generateExcelBase64(report: DailyReport): Promise<string> {
+export async function generateExcelBase64(
+  report: DailyReport,
+  responsibleOptions: string[] = [],
+): Promise<string> {
   const wb = new ExcelJS.Workbook();
-  buildWorkbook(wb, report);
+  buildWorkbook(wb, report, responsibleOptions);
   const raw = await wb.xlsx.writeBuffer();
   const buf = await fixDrawingCxCy(raw as ArrayBuffer);
   const bytes = new Uint8Array(buf);

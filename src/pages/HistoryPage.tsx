@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Download, FileText, Loader2, AlertCircle, Trash2, Trash } from 'lucide-react';
 import { useReportHistory, useDeleteReport, useDeleteAllReports } from '@/hooks/useReport';
 import { exportReportToExcel } from '@/utils/excel';
+import { useActiveEmployeeNames } from '@/hooks/useEmployees';
 import { formatDateRu } from '@/lib/utils';
 import type { DailyReport } from '@/types/report';
 
@@ -126,6 +127,7 @@ export default function HistoryPage() {
   const { data: reports, isLoading, isError } = useReportHistory();
   const deleteOne = useDeleteReport();
   const deleteAll = useDeleteAllReports();
+  const responsibleOptions = useActiveEmployeeNames();
 
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; date: string } | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -213,7 +215,7 @@ export default function HistoryPage() {
                 <ReportRow
                   key={report.id}
                   report={report}
-                  onExport={() => void exportReportToExcel(report)}
+                  onExport={() => void exportReportToExcel(report, responsibleOptions)}
                   onDelete={() => setConfirmDelete({ id: report.id, date: report.report_date })}
                 />
               ))}

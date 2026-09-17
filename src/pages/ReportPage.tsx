@@ -7,6 +7,7 @@ import type { ReportFormValues } from '@/types/report';
 import { DEFAULT_FORM } from '@/types/report';
 import { todayISO, getWeekNumber, formatDateRu } from '@/lib/utils';
 import { useReportByDate, useSaveReport, useSendTestEmail, sendReportEmail } from '@/hooks/useReport';
+import { useActiveEmployeeNames } from '@/hooks/useEmployees';
 import { exportReportToExcel } from '@/utils/excel';
 import { buildEmailHtml } from '@/utils/emailTemplate';
 import OperationalSection from '@/components/sections/OperationalSection';
@@ -22,6 +23,7 @@ export default function ReportPage() {
   const { data: existing, isLoading } = useReportByDate(activeDate);
   const save = useSaveReport();
   const sendTest = useSendTestEmail();
+  const responsibleOptions = useActiveEmployeeNames();
 
   const { register, control, handleSubmit, reset, watch, setValue } = useForm<ReportFormValues>({
     defaultValues: { ...DEFAULT_FORM, report_date: activeDate },
@@ -55,7 +57,7 @@ export default function ReportPage() {
       const data = await save.mutateAsync(values);
       toast.success('Отчёт сохранён');
       try {
-        await sendReportEmail(data);
+        await sendReportEmail(data, undefined, responsibleOptions);
         toast.success('Отчёт отправлен на почту ✉️', { duration: 4000 });
       } catch (emailErr) {
         toast.error(`Ошибка отправки письма: ${(emailErr as Error).message}`, { duration: 6000 });
@@ -67,7 +69,7 @@ export default function ReportPage() {
 
   const handleExport = () => {
     if (!existing) { toast.warning('Сначала сохраните отчёт'); return; }
-    void exportReportToExcel(existing);
+    void exportReportToExcel(existing, responsibleOptions);
   };
 
   /** Open email preview in new tab using current form values */
@@ -90,7 +92,7 @@ export default function ReportPage() {
   const handleTestSend = () => {
     if (!existing) { toast.warning('Сначала сохраните отчёт'); return; }
     if (!testEmail.trim()) { toast.warning('Введите email'); return; }
-    sendTest.mutate({ report: existing, email: testEmail.trim() });
+    sendTest.mutate({ report: existing, email: testEmail.trim(), responsibleOptions });
     setTestModalOpen(false);
   };
 

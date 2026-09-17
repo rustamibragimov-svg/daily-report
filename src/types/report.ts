@@ -80,12 +80,6 @@ export interface DailyReport extends ReportFormValues {
   updated_at: string;
 }
 
-export const RESPONSIBLE_OPTIONS = [
-  'Наталья Матвиенко',
-  'Идель Ибрагимов',
-  'Рустам Ибрагимов',
-];
-
 export const DATA_ACCURACY_OPTIONS = [
   'Все данные в трекер занесены своевременно и корректно',
   'Есть нарушения по точности и своевременности занесения данных',

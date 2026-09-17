@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Settings2, Loader2, Save, Headphones } from 'lucide-react';
 import { useSettings, useUpdateSetting } from '@/hooks/useSettings';
 import type { AppSetting } from '@/hooks/useSettings';
+import EmployeesSection from '@/components/settings/EmployeesSection';
 
 function SettingRow({ setting }: { setting: AppSetting }) {
   const [val, setVal] = useState(setting.value);
@@ -46,22 +47,6 @@ export default function SettingsPage() {
 
   const csSettings = settings?.filter(s => s.section === 'cs') ?? [];
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-24 text-gray-400">
-        <Loader2 size={20} className="animate-spin mr-2" /> Загрузка...
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="flex items-center gap-2 text-red-500 py-12 justify-center text-sm">
-        Ошибка загрузки настроек. Убедитесь что таблица <code>app_settings</code> создана в Supabase.
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
@@ -79,16 +64,29 @@ export default function SettingsPage() {
           Customer Service
         </div>
         <div className="px-5 py-1">
-          {csSettings.length === 0 ? (
-            <p className="text-sm text-gray-400 py-4 text-center">
-              Настройки CS не найдены. Выполните SQL миграцию.
+          {isLoading && (
+            <div className="flex items-center gap-2 text-sm text-gray-400 py-6 justify-center">
+              <Loader2 size={15} className="animate-spin" /> Загрузка...
+            </div>
+          )}
+          {isError && (
+            <p className="text-sm text-red-500 py-6 text-center">
+              Ошибка загрузки настроек. Убедитесь что таблица <code>app_settings</code> создана в Supabase.
             </p>
-          ) : (
-            csSettings.map(s => <SettingRow key={s.key} setting={s} />)
+          )}
+          {!isLoading && !isError && (
+            csSettings.length === 0 ? (
+              <p className="text-sm text-gray-400 py-4 text-center">
+                Настройки CS не найдены. Выполните SQL миграцию.
+              </p>
+            ) : (
+              csSettings.map(s => <SettingRow key={s.key} setting={s} />)
+            )
           )}
         </div>
       </div>
 
+      <EmployeesSection />
     </div>
   );
 }

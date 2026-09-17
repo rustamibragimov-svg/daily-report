@@ -106,8 +106,9 @@ export function useSaveReport() {
 export async function sendReportEmail(
   report: DailyReport,
   testEmail?: string,
+  responsibleOptions: string[] = [],
 ): Promise<void> {
-  const excelBase64 = await generateExcelBase64(report);
+  const excelBase64 = await generateExcelBase64(report, responsibleOptions);
   const { error } = await supabase.functions.invoke('send-report-email', {
     body: { report, excelBase64, testEmail },
   });
@@ -116,8 +117,11 @@ export async function sendReportEmail(
 
 export function useSendTestEmail() {
   return useMutation({
-    mutationFn: ({ report, email }: { report: DailyReport; email: string }) =>
-      sendReportEmail(report, email),
+    mutationFn: ({ report, email, responsibleOptions }: {
+      report: DailyReport;
+      email: string;
+      responsibleOptions?: string[];
+    }) => sendReportEmail(report, email, responsibleOptions),
     onSuccess: (_, { email }) => {
       toast.success(`Письмо отправлено на ${email} ✉️`, { duration: 5000 });
     },
